@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/Users/hyunjunpark/Library/CloudStorage/OneDrive-SKHynixInc/CXL/Attention_cpp/build",
+  "command": "/opt/homebrew/bin/aarch64-apple-darwin21-g++-11  -I/Users/hyunjunpark/Library/CloudStorage/OneDrive-SKHynixInc/CXL/Attention_cpp/model  -O0 -Wall -g2 -ggdb -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -std=gnu++20 -o CMakeFiles/Attention_cpp.dir/main.cpp.o -c /Users/hyunjunpark/Library/CloudStorage/OneDrive-SKHynixInc/CXL/Attention_cpp/main.cpp",
+  "file": "/Users/hyunjunpark/Library/CloudStorage/OneDrive-SKHynixInc/CXL/Attention_cpp/main.cpp"
+}
+]
