@@ -1,12 +1,13 @@
 # text_attention
 attention transformer translating sentence based from dianhsu swin-transformer https://github.com/dianhsu/swin-transformer-cpp.git
 
-state_dict.txt was excepted due to oversize. please check link
-https://drive.google.com/file/d/1Va89BOe-lAyruT1y9roKKb_aINzxEFfz/view?usp=sharing
+Files (i.e., parameters, dictionary, input sentence) are archived and can be downaload at [Project files](https://drive.google.com/drive/folders/17wloS01iR_vWAiZKwJCC8_3HH8-ulaxR?usp=sharing)
 
 this code written in c++11 environment.
-1) clean build
+0) De-archive downloaded file
+1) cd $(DOWNLOADED_DIR)
 2) mkdir build
 3) cd build
-4) make ..
-5) Attention_cpp
+4) cmake ..
+4) make
+5) ./Attention_cpp <YOUR OPTIONS>

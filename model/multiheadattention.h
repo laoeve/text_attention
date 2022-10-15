@@ -123,7 +123,8 @@ namespace text_attention {
         }
 
 
-        void forward(const Tensor<T> &input, Tensor<T> &output, Tensor<T> &mask, Tensor<T> &memory) {
+        void forward(const Tensor<T> &input, Tensor<T> &output, 
+                Tensor<T> &mask, Tensor<T> &memory) override {
             std::cout << "MultiheadAttention.Forward" << std::endl;
             //int dim_k = this->dim_model / this->heads;
             Tensor<T> tmp1{};
@@ -282,8 +283,8 @@ namespace text_attention {
             }
         }
 
-        long long parameterCount() {
-            long long ret = 0;
+        uint64_t parameterCount() override {
+            uint64_t ret = 0;
             for (int i = 0; i < qLinear.size(); ++i) {
                 ret += qLinear[i]->parameterCount();
                 ret += kLinear[i]->parameterCount();
