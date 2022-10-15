@@ -16,12 +16,12 @@ typedef float data_t;
 int main(int argc, char* argv[]) {
     /* Model arguments */
     int num_layers = 6, dim_embed = 512, dim_ff = 2048, num_heads = 8;
-    string path_shape = "../shape_selfattention.txt";
-    string path_value = "../value_selfattention.txt";
-    const string path_shape_input = "../shape_input.txt";
-    const string path_value_input = "../value_input.txt";
-    const string path_voca_src = "../vocab_de.txt";
-    const string path_voca_tgt = "../vocab_en.txt";
+    string path_shape = "../params/shape_selfattention.param";
+    string path_value = "../value_selfattention.param";
+    const string path_shape_input = "../sentence/shape.input";
+    const string path_value_input = "../sentence/value.input";
+    const string path_voca_src = "../dictionary/voca_de.dict";
+    const string path_voca_tgt = "../dictinoary/voca_en.dict";
 
     /* Parse argument */
     for (int i=0; i<argc; ) 

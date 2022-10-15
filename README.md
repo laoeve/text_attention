@@ -1,7 +1,7 @@
 # text_attention
 attention transformer translating sentence based from dianhsu swin-transformer https://github.com/dianhsu/swin-transformer-cpp.git
 
-Files (i.e., parameters, dictionary, input sentence) are archived and can be downaload at [Project files](https://drive.google.com/drive/folders/17wloS01iR_vWAiZKwJCC8_3HH8-ulaxR?usp=sharing)
+Files (i.e., parameters, dictionary, input sentence) are archived and can be downaload at [Project files](https://drive.google.com/drive/folders/17wloS01iR_vWAiZKwJCC8_3HH8-uIaxR?usp=sharing)
 
 this code written in c++11 environment.
 0) De-archive downloaded file
