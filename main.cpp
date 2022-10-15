@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
     /* Model arguments */
     int num_layers = 6, dim_embed = 512, dim_ff = 2048, num_heads = 8;
     string path_shape = "../params/shape_selfattention.param";
-    string path_value = "../value_selfattention.param";
+    string path_value = "../params/value_selfattention.param";
     const string path_shape_input = "../sentence/shape.input";
     const string path_value_input = "../sentence/value.input";
     const string path_voca_src = "../dictionary/voca_de.dict";
