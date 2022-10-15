@@ -25,12 +25,12 @@ namespace text_attention {
 
             for(int h = 0; h < heads; h += 1){
                 para_num = 0;
-                auto *tmp_Wq = new Tensor<T>{};
-                auto *tmp_Wk = new Tensor<T>{};
-                auto *tmp_Wv = new Tensor<T>{};
-                auto *tmp_Bq = new Tensor<T>{};
-                auto *tmp_Bk = new Tensor<T>{};
-                auto *tmp_Bv = new Tensor<T>{};
+                auto tmp_Wq = new Tensor<T>{};
+                auto tmp_Wk = new Tensor<T>{};
+                auto tmp_Wv = new Tensor<T>{};
+                auto tmp_Bq = new Tensor<T>{};
+                auto tmp_Bk = new Tensor<T>{};
+                auto tmp_Bv = new Tensor<T>{};
 
                 Tensor<T> para_Wq,para_Wk,para_Wv;
                 para_Wq.insert(para_Wq.end(), param_map[str_key_layer+"0.weight"].pvals.begin(), param_map[str_key_layer+"0.weight"].pvals.end());
@@ -135,33 +135,33 @@ namespace text_attention {
 
             if(&memory != nullptr){
                 for(auto item : (this->qLinear)){
-                    auto *q_tmp = new Tensor<T>{};
+                    auto q_tmp = new Tensor<T>{};
                     item->forward(memory, *q_tmp);
                     q.push_back(q_tmp);
                 }
                 for(auto item : (this->kLinear)){
-                    auto *k_tmp = new Tensor<T>{};
+                    auto k_tmp = new Tensor<T>{};
                     item->forward(memory, *k_tmp);
                     k.push_back(k_tmp);
                 }
                 for(auto item : (this->vLinear)){
-                    auto *v_tmp = new Tensor<T>{};
+                    auto v_tmp = new Tensor<T>{};
                     item->forward(tmp1, *v_tmp);
                     v.push_back(v_tmp);
                 }
             } else {
                 for(auto item : (this->qLinear)){
-                    auto *q_tmp = new Tensor<T>{};
+                    auto q_tmp = new Tensor<T>{};
                     item->forward(tmp1, *q_tmp);
                     q.push_back(q_tmp);
                 }
                 for(auto item : (this->kLinear)){
-                    auto *k_tmp = new Tensor<T>{};
+                    auto k_tmp = new Tensor<T>{};
                     item->forward(tmp1, *k_tmp);
                     k.push_back(k_tmp);
                 }
                 for(auto item : (this->vLinear)){
-                    auto *v_tmp = new Tensor<T>{};
+                    auto v_tmp = new Tensor<T>{};
                     item->forward(tmp1, *v_tmp);
                     v.push_back(v_tmp);
                 }

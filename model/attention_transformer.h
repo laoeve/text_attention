@@ -35,7 +35,7 @@ namespace text_attention {
             gen_b->insert(gen_b->end(), param_map["generator.proj.bias"].pvals.begin(), param_map["generator.proj.bias"].pvals.end());
             gen_b->shape.insert(gen_b->shape.end(), param_map["generator.proj.bias"].pshape.begin(), param_map["generator.proj.bias"].pshape.end());
 
-            auto generator = new Linear<T>(dim_model, tgt_vocab, *gen_w, *gen_b);
+            generator = new Linear<T>(dim_model, tgt_vocab, *gen_w, *gen_b);
         }
 
 
@@ -98,6 +98,7 @@ namespace text_attention {
                 decoder->forward(tgt_embed, decoder_out, memory, tgt_mask, src_mask);  
                 generator->forward(decoder_out, tmp3);
                 softMax.forward(tmp3, output);
+                tmp3.clear();
 
                 //find max value of probability
                 int max_index = max_element(output.begin(), output.end()) - output.begin();

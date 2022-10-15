@@ -44,8 +44,11 @@ namespace text_attention {
             }
             output.clear();
             output.shape.clear();
+            output = tmp;
+/*             output.clear();
+            output.shape.clear();
             output.insert(output.end(), tmp.begin(), tmp.end());
-            output.shape.insert(output.shape.end(), tmp.shape.begin(), tmp.shape.end());
+            output.shape.insert(output.shape.end(), tmp.shape.begin(), tmp.shape.end()); */
 
             /*
             Tensor<T> tmp{};

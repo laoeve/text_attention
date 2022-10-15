@@ -22,6 +22,10 @@ int main() {
         std::map<int, std::string> src_vocab;
         std::map<int, std::string> tgt_vocab;
 
+        /* find words from tgt_vocab */
+        src_vocab = text_attention::vocab_parsing("../vocab_de.txt");
+        tgt_vocab = text_attention::vocab_parsing("../vocab_en.txt");
+
         get_param_shape("../state_dict_size.txt", text_attention::param_map);
         get_param_value("../state_dict.txt", text_attention::param_map);
 
@@ -43,10 +47,6 @@ int main() {
         std::cout << "Input Tensor Size " << input << std::endl;
 
         attn->forward(input, output);
-
-        /* find words from tgt_vocab */
-        src_vocab = text_attention::vocab_parsing("../vocab_de.txt");
-        tgt_vocab = text_attention::vocab_parsing("../vocab_en.txt");
 
         delete attn;
         std::cout << "Ok" << std::endl;
