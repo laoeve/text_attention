@@ -7,16 +7,31 @@
 
 #include "layer.h"
 
+using namespace std;
+
 namespace text_attention {
 template<typename T>
 class LayerNorm : public Layer<T> {
 public:
-    LayerNorm(int dim, std::vector<T> &vec_gamma, std::vector<T> &vec_beta): 
-        dim(dim) 
+    LayerNorm(string name, int dim, vector<T> &vec_gamma, vector<T> &vec_beta)
+    : name(name), dim(dim) 
     {
         eps = 1e-5;
         gamma = &vec_gamma;
         beta = &vec_beta;
+    }
+
+    ~LayerNorm( )
+    {
+        delete gamma;
+        delete beta;
+    }
+
+    void print_params( ) override
+    {
+        std::cout << ">>>>>>>> LayerNorm - " << name 
+            << " gamma.shape=" << gamma->size( ) 
+            << " beta.shape=" << beta->size( ) << std::endl;
     }
 
     uint64_t parameterCount() override
@@ -50,7 +65,9 @@ public:
 
 private:
     T eps;
-    std::vector<T> *gamma = nullptr, *beta = nullptr; // gamma:a_2, beta:b_2
+    std::vector<T> *gamma = nullptr; 
+    std::vector<T> *beta = nullptr; 
+    std::string name;
     int dim;
 };
 }

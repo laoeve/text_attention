@@ -9,20 +9,37 @@
 #define ATTENTION_TRANSFORMER_CPP_ENCODER_H
 
 #include <vector>
+
+#include "top_model.h"
 #include "tensor.h"
 #include "layer.h"
 //#include "patch_merging.h"
 #include "encoderLayer.h"
 
+using namespace std;
+
 namespace text_attention {
 template<typename T>
 class Encoder : public Layer<T> {
 public:
-    Encoder(int num_layer, int dim_model, int dim_ff, int heads, int max_len) {
-        std::string str_key_layer = "encoder.layers.";
-        for (int i = 0; i < num_layer; i += 1) {
-            auto enc = new EncoderLayer<T>(num_layer, dim_model, dim_ff, 
-                    heads, max_len, str_key_layer + std::to_string(i) + ".");
+    Encoder(TopModel<T>* master,
+            int num_layers, int dim_model, int num_heads, int dim_ff,
+            const string prefix_enc, const string prefix_layer,
+            const string weight_str, const string bias_str, 
+            const string LN_gamma_str, const string LN_beta_str,
+            const string sa_query_str, const string sa_key_str,
+            const string sa_value_str, const string sa_out_str,
+            const string ff_hidden_str, const string ff_out_str,
+            const string LN_mh_str, const string LN_ff_str) 
+    : Layer<T>(master)
+    {
+        for (int id=0; id<num_layers; id++) 
+        {
+            EncoderLayer<T>* enc = new EncoderLayer<T>(master,
+                    dim_model, num_heads, dim_ff, prefix_enc, prefix_layer, id,
+                    weight_str, bias_str, LN_gamma_str, LN_beta_str,
+                    sa_query_str, sa_key_str, sa_value_str, sa_out_str,
+                    ff_hidden_str, ff_out_str, LN_mh_str, LN_ff_str);
             layers.push_back(enc);
         }
     }

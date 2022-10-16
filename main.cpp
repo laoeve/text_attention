@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <cassert>
+#include "model/top_model.h"
 #include "model/attention_transformer.h"
 #include "model/functions.h"
 
@@ -82,21 +83,18 @@ int main(int argc, char* argv[]) {
     get_param_shape(path_shape_input, input_idx);
     get_param_value(path_value_input, input_idx);
 
+    Tensor<data_t> input(input_idx["src_idx"].pvals, input_idx["src_idx"].pshape);
+    Tensor<data_t> output;
+    std::cout << "Input tensor dimension: " << input << std::endl;
+
     /* Load vocabulary */
     map<int, string> voca_src = vocab_parsing(path_voca_src);
     map<int, string> voca_tgt = vocab_parsing(path_voca_tgt);
 
-    /* Initialize model and input */
-//    AttentionTransformer<data_t>* model = 
-//        new AttentionTransformer<data_t>(num_layers, dim_embed, dim_ff, 
-//                num_heads, voca_src.size( ), voca_tgt.size( ), max_len);
-
+    /* Initialize model */
+    TopModel<data_t>* model= new AttentionTransformer<data_t>(num_layers, 
+            dim_embed, num_heads, dim_ff, voca_src.size( ), voca_tgt.size( ));
     std::cout << "Model initiailization complete" << std::endl;
-
-    Tensor<data_t> input(input_idx["src_idx"].pvals, input_idx["src_idx"].pshape);
-    Tensor<data_t> output;
-
-    std::cout << "Input tensor dimension: " << input << std::endl;
 
     /* Run model */
     assert(0);

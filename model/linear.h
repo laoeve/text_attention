@@ -14,9 +14,9 @@ namespace text_attention {
 template<typename T>
 class Linear : public Layer<T> {
 public:
-    Linear(int in_feature, int out_feature, 
+    Linear(string name, int in_feature, int out_feature, 
             Tensor<T> &param_weights, Tensor<T> &param_bias) 
-    : in_feature(in_feature), out_feature(out_feature) 
+    : name(name), in_feature(in_feature), out_feature(out_feature) 
     {
         weights = &param_weights;
         bias = &param_bias;
@@ -29,14 +29,15 @@ public:
     }
 
     ~Linear() {
-        if (weights != nullptr) {
-            delete weights;
-            weights = nullptr;
-        }
-        if (bias != nullptr) {
-            delete bias;
-            bias = nullptr;
-        }
+        delete weights;
+        delete bias;
+    }
+
+    void print_params( ) override 
+    {
+        std::cout << ">>>>>>>> Linear - " << name 
+            << " weight.shape=" << *weights 
+            << " bias.shape=" << *bias << std::endl;
     }
 
     /**
@@ -83,6 +84,7 @@ public:
 private:
     Tensor<T> *weights = nullptr; 
     Tensor<T> *bias = nullptr;
+    std::string name;
     int in_feature, out_feature;
 };
 }

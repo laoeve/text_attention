@@ -5,19 +5,31 @@
 #ifndef ATTENTION_TRANSFORMER_CPP_PRE_NORM_H
 #define ATTENTION_TRANSFORMER_CPP_PRE_NORM_H
 
+#include "top_model.h"
 #include "layer.h"
 #include "layer_norm.h"
 #include "functions.h"
+
+using namespace std;
 
 namespace text_attention {
 template<typename T>
 class PreNorm : virtual public Layer<T> {
 public:
-    PreNorm(Layer <T> *fn, int dim, std::string str_key_layer) 
-    : fn(fn), dim(dim) {
-        layerNorm = new LayerNorm<T>(dim, 
-                text_attention::param_map[str_key_layer+"norm.a_2"].pvals, 
-                text_attention::param_map[str_key_layer+"norm.b_2"].pvals);
+    PreNorm(TopModel<T>* master, Layer<T>* fn, 
+            int dim_model, const string prefix_str, 
+            const string LN_gamma_str, const string LN_beta_str)
+    : Layer<T>(master), fn(fn)
+    {
+        std::cout << ">>>> Init layer normalization sublayer - " << std::endl;
+
+        std::vector<T>* gamma = 
+            new vector<T>(param_map[prefix_str+"."+LN_gamma_str].pvals);
+        std::vector<T>* beta = 
+            new vector<T>(param_map[prefix_str+"."+LN_beta_str].pvals);
+        
+        layerNorm = new LayerNorm<T>(prefix_str, dim_model, *gamma, *beta);
+        layerNorm->print_params( );
     }
 
     uint64_t parameterCount() override {
@@ -39,7 +51,6 @@ public:
 private:
     Layer <T> *fn = nullptr;
     LayerNorm <T> *layerNorm = nullptr;
-    int dim;
 };
 }
 #endif //ATTENTION_TRANSFORMER_CPP_PRE_NORM_H

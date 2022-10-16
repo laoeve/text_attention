@@ -7,32 +7,50 @@
 #ifndef ATTENTION_TRANSFORMER_CPP_ENCODER_LAYER_H
 #define ATTENTION_TRANSFORMER_CPP_ENCODER_LAYER_H
 
+#include "top_model.h"
 #include "layer.h"
 #include "residual.h"
 #include "pre_norm.h"
 #include "multiheadattention.h"
 #include "feed_forward.h"
 
+using namespace std;
+
 namespace text_attention {
 template<typename T>
 class EncoderLayer : virtual public Layer<T> {
 public:
-    EncoderLayer(int num_layer, int dim_model, int dim_ff, 
-            int heads, int max_len, std::string str_key_layer) {
-        multiheadAttention = new MultiheadAttention<T>(
-                dim_model, heads, max_len, str_key_layer + "self_attn.linears.");
+    EncoderLayer(TopModel<T>* master,
+            int dim_model, int num_heads, int dim_ff, const string prefix_enc, 
+            const string prefix_layer, int id, const string weight_str, 
+            const string bias_str, const string LN_gamma_str, 
+            const string LN_beta_str, const string sa_query_str, 
+            const string sa_key_str, const string sa_value_str, 
+            const string sa_out_str, const string ff_hidden_str, 
+            const string ff_out_str, const string LN_mh_str, const string LN_ff_str) 
+    : Layer<T>(master)
+    {
+        string prefix_str = prefix_enc+"."+prefix_layer+"."+to_string(id);
+        std::cout << "Init encoder - " << prefix_str << std::endl;
+        
+        /* Init attention layer */
+        multiheadAttention = new MultiheadAttention<T>(master, 
+                dim_model, num_heads, prefix_str, weight_str, bias_str, 
+                sa_query_str, sa_key_str, sa_value_str, sa_out_str);
 
-        feedForward = new FeedForward<T>(
-                dim_model, dim_ff, str_key_layer + "feed_forward.");
+        /* Init feedforward layer (MLP) */
+        feedForward = new FeedForward<T>(master, dim_model, dim_ff,
+                prefix_str, weight_str, bias_str, ff_hidden_str, ff_out_str);
 
-        preNorm1 = new PreNorm<T>(multiheadAttention, 
-                dim_model, str_key_layer + "sublayer.0.");
-        preNorm2 = new PreNorm<T>(feedForward, 
-                dim_model, str_key_layer + "sublayer.1.");
+        /* Init layer normalizations */
+        preNorm_mh = new PreNorm<T>(master, multiheadAttention, dim_model,
+                prefix_str+"."+LN_mh_str, LN_gamma_str, LN_beta_str);
+        residual_mh = new Residual<T>(preNorm_mh);
 
-        residual1 = new Residual<T>(preNorm1);
-        residual2 = new Residual<T>(preNorm2);
-    }   // hjpark) dropout not included
+        preNorm_ff = new PreNorm<T>(master, feedForward, dim_model,
+                prefix_str+"."+LN_ff_str, LN_gamma_str, LN_beta_str);
+        residual_ff = new Residual<T>(preNorm_ff);
+    }
 
     uint64_t parameterCount() override {
         uint64_t ret = 0;
@@ -42,60 +60,44 @@ public:
         if (feedForward) {
             ret += feedForward->parameterCount();
         }
-        if (preNorm1) {
-            ret += preNorm1->parameterCount();
+        if (preNorm_mh) {
+            ret += preNorm_mh->parameterCount();
         }
-        if (preNorm2) {
-            ret += preNorm2->parameterCount();
+        if (preNorm_ff) {
+            ret += preNorm_ff->parameterCount();
         }
-        if (residual1) {
-            ret += residual1->parameterCount();
+        if (residual_mh) {
+            ret += residual_mh->parameterCount();
         }
-        if (residual2) {
-            ret += residual2->parameterCount();
+        if (residual_ff) {
+            ret += residual_ff->parameterCount();
         }
         return ret;
     }
 
     ~EncoderLayer() {
-        if (multiheadAttention != nullptr) {
-            delete multiheadAttention;
-            multiheadAttention = nullptr;
-        }
-        if (feedForward != nullptr) {
-            delete feedForward;
-            feedForward = nullptr;
-        }
-        if (preNorm1 != nullptr) {
-            delete preNorm1;
-            preNorm1 = nullptr;
-        }
-        if (preNorm2 != nullptr) {
-            delete preNorm2;
-            preNorm2 = nullptr;
-        }
-        if (residual1 != nullptr) {
-            delete residual1;
-            residual1 = nullptr;
-        }
-        if (residual2 != nullptr) {
-            delete residual2;
-            residual2 = nullptr;
-        }
+        delete multiheadAttention;
+        delete feedForward;
+        delete preNorm_mh;
+        delete preNorm_ff;
+        delete residual_mh;
+        delete residual_ff;
     }
 
     void forward(const Tensor<T> &input, Tensor<T> &output, Tensor<T> &mask) {
         Tensor<T> tmp{};
         
-        residual1->forward(input, tmp, mask, *blank);
-        residual2->forward(tmp, output, *blank, *blank);
+        residual_mh->forward(input, tmp, mask, *blank);
+        residual_ff->forward(tmp, output, *blank, *blank);
     }
 
 private:
-    Residual<T> *residual1 = nullptr, *residual2 = nullptr;
-    PreNorm<T> *preNorm1 = nullptr, *preNorm2 = nullptr;
     MultiheadAttention<T> *multiheadAttention = nullptr;
     FeedForward<T> *feedForward = nullptr;
+    PreNorm<T> *preNorm_mh = nullptr; 
+    PreNorm<T> *preNorm_ff = nullptr;
+    Residual<T> *residual_mh = nullptr;
+    Residual<T> *residual_ff = nullptr;
     Tensor<T> *blank = nullptr;
 };
 }

@@ -36,6 +36,13 @@ T GELU(T x)
     // approximate function provide by https://arxiv.org/pdf/1606.08415.pdf
 }
 
+std::string replace_str(const std::string input, std::string before, std::string after)
+{
+    std::string ret = input;
+    ret.replace(input.find(before), before.size( ), after);
+    return ret;
+}
+
 template<typename T>
 Tensor <T> *get_relative_distances(int windowSize) 
 {
@@ -176,6 +183,7 @@ void embed_idx(const Tensor <T> &input, Tensor <T> &output,
     lut.clear();
 }
 
+//XXX: DELETE
 template<typename T>
 void t_tran(Tensor <T> &input)
 {
