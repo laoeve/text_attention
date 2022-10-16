@@ -16,13 +16,11 @@ typedef float data_t;
 
 int main(int argc, char* argv[]) {
     /* Model arguments */
-    int num_layers = 6, dim_embed = 512, dim_ff = 2048, num_heads = 8;
-    string path_shape = "../params/shape_selfattention.param";
-    string path_value = "../params/value_selfattention.param";
-    const string path_shape_input = "../sentence/shape.input";
-    const string path_value_input = "../sentence/value.input";
-    const string path_voca_src = "../dictionary/voca_de.dict";
-    const string path_voca_tgt = "../dictinoary/voca_en.dict";
+    string path_shape_input = "../sentence/shape.input";
+    string path_value_input = "../sentence/value.input";
+    string path_voca_src = "../dictionary/voca_de.dict";
+    string path_voca_tgt = "../dictinoary/voca_en.dict";
+    string model_arg = "transformer";
 
     /* Parse argument */
     for (int i=0; i<argc; ) 
@@ -31,14 +29,11 @@ int main(int argc, char* argv[]) {
         if (argc==2 && (arg_str=="--help" || arg_str=="-h"))
         {
             std::cerr << "Required options are shown as below:\n"
-                << "\t-l, --layers: number of layers in encoder&decoder\n"
-                << "\t-e, --embedding: dimension of embedding vector\n"
-                << "\t-f, --feedforward: dimension of feed-forward layer\n" 
-                << "\t-m, --multiheads: number of multi-head attentions\n"
-                << "\t--shape-path: path of weight parameter shapes\n"
-                << "\t--value-path: path of weight parameter values\n"
+                << "\t-m, --model: name of model "
+                << "[transformer, bert-base, bert-large, gpt2]\n"
+                << "\t--input-shape-path: path of input shape\n"
+                << "\t--input-value-path: path of input shape\n"
                 << std::endl;
-            assert(0);
             exit(1);
         }
 
@@ -55,18 +50,12 @@ int main(int argc, char* argv[]) {
             exit(1);
         }
 
-        if (arg_str=="-l" || arg_str=="--layers")
-            num_layers = atoi(argv[i+1]);
-        else if (arg_str=="-e" || arg_str=="--embedding")
-            dim_embed = atoi(argv[i+1]);
-        else if (arg_str=="-f" || arg_str=="--feedforward")
-            dim_ff = atoi(argv[i+1]);
-        else if (arg_str=="-m" || arg_str=="--multiheads")
-            num_heads = atoi(argv[i+1]);
-        else if (arg_str=="--shape-path") 
-            path_shape = argv[i+1];
-        else if (arg_str=="--value-path")
-            path_value = argv[i+1];
+        if (arg_str=="-m" || arg_str=="--model")
+            model_arg = argv[i+1];
+        else if (arg_str=="--input-shape-path") 
+            path_shape_input = argv[i+1];
+        else if (arg_str=="--input-value-path")
+            path_value_input = argv[i+1];
         else
         {
             std::cerr << "Error: invalid option provided!" << std::endl;
@@ -77,24 +66,62 @@ int main(int argc, char* argv[]) {
         i+=2;
     }
 
-    /* Load parameters and input */
-    get_param_shape(path_shape, param_map);
-    get_param_value(path_value, param_map);
+    /* Load vocabulary */
+    map<int, string> voca_src = vocab_parsing(path_voca_src);
+    map<int, string> voca_tgt = vocab_parsing(path_voca_tgt);
+
+    /* Init models */
+    TopModel<data_t>* model = nullptr;
+    if (model_arg=="transformer") 
+    { 
+        string path_shape = "../params/shape_transformer.param";
+        string path_value = "../params/value_transformer.param";
+        get_param_shape(path_shape, param_map);
+        get_param_value(path_value, param_map);
+        model = new AttentionTransformer<data_t>(voca_src.size( ), voca_tgt.size( ));
+    }
+    else if (model_arg=="bert-base")
+    {
+        //TODO
+        assert(0);
+        string path_shape = "../params/shape_bert-base.param";
+        string path_value = "../params/value_bert-base.param";
+        get_param_shape(path_shape, param_map);
+        get_param_value(path_value, param_map);
+    }
+    else if (model_arg=="bert-large")
+    {
+        //TODO
+        assert(0);
+        string path_shape = "../params/shape_bert-large.param";
+        string path_value = "../params/value_bert-large.param";
+        get_param_shape(path_shape, param_map);
+        get_param_value(path_value, param_map);
+    }
+    else if (model_arg=="gpt2")
+    {
+        //TODO
+        assert(0);
+        string path_shape = "../params/shape_gpt2.param";
+        string path_value = "../params/value_gpt2.param";
+        get_param_shape(path_shape, param_map);
+        get_param_value(path_value, param_map);
+    }
+    else
+    {
+        std::cerr << "Error: unavailable models" << std::endl;
+        assert(0);
+        exit(1);
+    }
+    std::cout << "Model initiailization complete" << std::endl;
+
+    /* Load input */
     get_param_shape(path_shape_input, input_idx);
     get_param_value(path_value_input, input_idx);
 
     Tensor<data_t> input(input_idx["src_idx"].pvals, input_idx["src_idx"].pshape);
     Tensor<data_t> output;
     std::cout << "Input tensor dimension: " << input << std::endl;
-
-    /* Load vocabulary */
-    map<int, string> voca_src = vocab_parsing(path_voca_src);
-    map<int, string> voca_tgt = vocab_parsing(path_voca_tgt);
-
-    /* Initialize model */
-    TopModel<data_t>* model= new AttentionTransformer<data_t>(num_layers, 
-            dim_embed, num_heads, dim_ff, voca_src.size( ), voca_tgt.size( ));
-    std::cout << "Model initiailization complete" << std::endl;
 
     /* Run model */
     assert(0);

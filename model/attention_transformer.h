@@ -25,11 +25,19 @@ template<typename T>
 class AttentionTransformer : virtual public TopModel<T> 
 {
 public:
-    AttentionTransformer(int num_layers, int dim_model, int num_heads, 
-            int dim_ff, int voca_src_size, int voca_tgt_size)
+    AttentionTransformer(int voca_src_size, int voca_tgt_size)
     : voca_src_size(voca_src_size),voca_tgt_size(voca_tgt_size)
     {
         /* Template: string keys */
+        TopModel<T>::num_layers = 6;
+        TopModel<T>::dim_embed = 512;
+        TopModel<T>::num_heads = 8;
+        TopModel<T>::dim_ff = 2048;
+        int num_layers = TopModel<T>::num_layers; 
+        int dim_embed = TopModel<T>::dim_embed; 
+        int num_heads = TopModel<T>::num_heads;
+        int dim_ff = TopModel<T>::dim_ff; 
+
         const string prefix_enc = "encoder";
         const string prefix_dec = "decoder";
         const string prefix_layer = "layers";
@@ -59,17 +67,12 @@ public:
         const string gen_str = "generator.proj";
 
         /* Init model dimension parameters */
-        this->num_layers = num_layers;
-        this->dim_embed = dim_model;
-        this->num_heads = num_heads;
-        this->dim_ff = dim_ff;
-
-        encoder = new Encoder<T>(this, num_layers, dim_model, num_heads, 
+        encoder = new Encoder<T>(this, num_layers, dim_embed, num_heads, 
                 dim_ff, prefix_enc, prefix_layer, weight_str, bias_str, 
                 LN_gamma_str, LN_beta_str, sa_query_str, 
                 sa_key_str, sa_value_str, sa_out_str, 
                 ff_hidden_str, ff_out_str, LN_mh_str, LN_ff_str);
-        decoder = new Decoder<T>(this, num_layers, dim_model, num_heads, 
+        decoder = new Decoder<T>(this, num_layers, dim_embed, num_heads, 
                 dim_ff, prefix_dec, prefix_layer, weight_str, bias_str, 
                 LN_gamma_str, LN_beta_str, sa_query_str, 
                 sa_key_str, sa_value_str, sa_out_str,
@@ -87,7 +90,7 @@ public:
                     param_map[gen_str+"."+weight_str].pvals,
                     param_map[gen_str+"."+weight_str].pshape);
 
-            generator = new Linear<T>(gen_str, dim_model, 
+            generator = new Linear<T>(gen_str, dim_embed, 
                     voca_tgt_size, *gen_w, *gen_b);
 
             generator->print_params( );
