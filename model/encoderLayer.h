@@ -84,11 +84,11 @@ public:
         delete residual_ff;
     }
 
-    void forward(const Tensor<T> &input, Tensor<T> &output, Tensor<T> &mask) {
+    void forward(const Tensor<T> &input, Tensor<T> &output, const Tensor<bool> &mask) {
         Tensor<T> tmp{};
         
-        residual_mh->forward(input, tmp, mask, *blank);
-        residual_ff->forward(tmp, output, *blank, *blank);
+        residual_mh->forward(input, tmp, mask, *blank_mem);
+        residual_ff->forward(tmp, output, *blank_mask, *blank_mem);
     }
 
 private:
@@ -98,7 +98,8 @@ private:
     PreNorm<T> *preNorm_ff = nullptr;
     Residual<T> *residual_mh = nullptr;
     Residual<T> *residual_ff = nullptr;
-    Tensor<T> *blank = nullptr;
+    Tensor<bool> *blank_mask = nullptr;
+    Tensor<T> *blank_mem = nullptr;
 };
 }
 #endif //ATTENTION_TRANSFORMER_CPP_ENCODER_LAYER_H

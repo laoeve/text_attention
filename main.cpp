@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
     string path_shape_input = "../sentence/shape.input";
     string path_value_input = "../sentence/value.input";
     string path_voca_src = "../dictionary/voca_de.dict";
-    string path_voca_tgt = "../dictinoary/voca_en.dict";
+    string path_voca_tgt = "../dictionary/voca_en.dict";
     string model_arg = "transformer";
 
     /* Parse argument */
@@ -69,6 +69,9 @@ int main(int argc, char* argv[]) {
     /* Load vocabulary */
     map<int, string> voca_src = vocab_parsing(path_voca_src);
     map<int, string> voca_tgt = vocab_parsing(path_voca_tgt);
+
+    std::cout << "source dictionary size: " << voca_src.size( ) << std::endl;
+    std::cout << "target dictinoary size: " << voca_tgt.size( ) << std::endl;
 
     /* Init models */
     TopModel<data_t>* model = nullptr;
@@ -124,7 +127,6 @@ int main(int argc, char* argv[]) {
     std::cout << "Input tensor dimension: " << input << std::endl;
 
     /* Run model */
-    assert(0);
 //    model->forward(input, output);
 
 //    delete model;

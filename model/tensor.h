@@ -13,17 +13,87 @@ typedef std::vector<int> TensorShape;
 template<typename T>
 class Tensor : public std::vector<T> {
 public:
-    Tensor() : std::vector<T>() {
+    Tensor() : std::vector<T>() 
+    {
     }
 
-    Tensor(std::vector<T>& values, std::vector<int>& shape) {
+    Tensor(std::vector<T>& values, std::vector<int>& shape) 
+    {
         this->insert(this->end( ), values.begin( ), values.end( ));
         this->shape = shape;
+        std::fill(this->begin( ), this->end( ), 0);
     }
 
-    Tensor(int size, T default_data) : std::vector<T>(size, default_data) {
+    Tensor(
+            typename std::vector<T>::iterator firstIt, 
+            typename std::vector<T>::iterator lastIt, 
+            const std::vector<int> shape_) 
+    : shape(shape_)
+    {
+        uint64_t mult = 1;
+        for (int i=0; i<shape.size( );i++)
+            mult *= shape[i];
+        this->resize(mult);
+        
+        if (this->size( )!=lastIt-firstIt)
+        {
+            std::cerr << "Error: shape size does not match "
+                "the number of inserting elements" << std::endl;
+            assert(0);
+            exit(1);
+        }
+        else
+            this->assign(firstIt, lastIt);
+   }
+    void reshape(
+            typename std::vector<T>::iterator firstIt, 
+            typename std::vector<T>::iterator lastIt, 
+            const std::vector<int> shape_) 
+    {
+        shape = shape_;
+        uint64_t mult = 1;
+        for (int i=0; i<shape.size( );i++)
+            mult *= shape[i];
+        this->resize(mult);
+        
+        if (this->size( )!=lastIt-firstIt)
+        {
+            std::cerr << "Error: shape size does not match "
+                "the number of inserting elements" << std::endl;
+            assert(0);
+            exit(1);
+        }
+        else
+            this->assign(firstIt, lastIt);
+   }
+
+    Tensor(const std::vector<int> shape_) : shape(shape_)
+    {
+        uint64_t mult = 1;
+        for (int i=0; i<shape.size( );i++)
+            mult *= shape[i];
+        this->resize(mult);
+    }
+
+    Tensor(int size, T default_data) : std::vector<T>(size, default_data) 
+    {
         shape.clear();
         shape.push_back(size);
+    }
+
+    void reshape(const std::vector<int> new_shape)
+    {
+        shape = new_shape;
+        uint64_t mult = 1;
+        for (int i=0; i<new_shape.size( );i++)
+            mult *= new_shape[i];
+        this->resize(mult);
+    }
+
+    void reset( )
+    {
+        this->clear( );
+        shape.clear( );
     }
 
     void transpose( ) 
@@ -90,10 +160,10 @@ public:
         os << "] ";
         assert(cnt == vec.size());
 
-//        os << "[";
-//        for (int i=0; i<vec.size( ); i++)
-//            os << vec[i] << " ";
-//        os << "]";
+        os << "[";
+        for (int i=0; i<vec.size( ); i++)
+            os << vec[i] << " ";
+        os << "]";
 
         return os;
     }

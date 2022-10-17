@@ -51,7 +51,7 @@ public:
     }
 
     // changed from w-msa
-    void forward(const Tensor<T> &input, Tensor<T> &output, Tensor<T> &mask) { 
+    void forward(const Tensor<T> &input, Tensor<T> &output, const Tensor<bool> &mask) { 
         Tensor<T> tmp{};
         int layer_num = 0;
         tmp = input;

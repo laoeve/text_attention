@@ -160,29 +160,6 @@ void tensor_print(Tensor <T> &input){
     }
 } */
 
-template<typename T>
-void embed_idx(const Tensor <T> &input, Tensor <T> &output, 
-        int dim_model, std::string str_lut, std::string str_pe)
-{
-    std::cout << "Embedding : " << input << std::endl;
-
-    std::vector<float> lut;
-    
-    // Embeddings, PE by reference input[idx]
-    for(int idx = 0; idx < input.size() ; idx++){
-        for(int embed = 0; embed < dim_model; embed++){
-            lut.push_back( text_attention::param_map[str_lut].pvals[input[idx]*dim_model + embed] * std::sqrt(dim_model) //Embeddings
-                    + text_attention::param_map[str_pe].pvals[input[idx]*dim_model + embed] );  // Positional Encoding
-        }
-    }
-    output.clear();
-    output.shape.clear();
-    output.insert(output.begin(), lut.begin(), lut.end());
-    output.shape = input.shape;
-    output.shape.push_back(dim_model);
-    lut.clear();
-}
-
 //XXX: DELETE
 template<typename T>
 void t_tran(Tensor <T> &input)
@@ -221,7 +198,14 @@ std::map<int, std::string> vocab_parsing(std::string filename)
     input.open(filename);
     const bool print_log = false;
     const std::regex re("\\('(.*?)', ([0-9]*)\\)");
-    
+
+    if (input.is_open()==false)
+    {
+        std::cerr << "[Error] Failed to open trace file" << std::endl;
+        assert(0);
+        exit(1);
+    }
+
     std::string line;
     std::map<int, std::string> vocab;
 
@@ -254,6 +238,7 @@ void get_param_shape(std::string fpath, std::map<std::string, pinfo_t> &target_m
     if (fstream.is_open()==false)
     {
         std::cerr << "[Error] Failed to open trace file" << std::endl;
+        assert(0);
         exit(1);
     }
 

@@ -27,7 +27,7 @@ public:
     }
 
     void forward(const Tensor<T> &input, Tensor<T> &output, 
-            Tensor<T> &mask, Tensor<T> &memory) override {
+            const Tensor<bool> &mask, const Tensor<T> &memory) override {
         assert(fn != nullptr);
         fn->forward(input, output, mask, memory);
         for (int i = 0; i < output.size(); ++i) {

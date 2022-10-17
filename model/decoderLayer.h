@@ -108,12 +108,12 @@ public:
     }
 
     void forward(const Tensor<T> &input, Tensor<T> &memory, 
-            Tensor<T> &output, Tensor<T> &tgt_mask, Tensor<T> &src_mask) {
+            Tensor<T> &output, Tensor<bool> &tgt_mask, Tensor<bool> &src_mask) {
         Tensor<T> tmp1{};
         Tensor<T> tmp2{};
-        residual_mmh->forward(input, tmp1, tgt_mask, *blank);
+        residual_mmh->forward(input, tmp1, tgt_mask, *blank_mem);
         residual_mh->forward(tmp1, tmp2, src_mask, memory);
-        residual_ff->forward(tmp2, output, *blank, *blank);
+        residual_ff->forward(tmp2, output, *blank_mask, *blank_mem);
     }
 
 private:
@@ -126,7 +126,8 @@ private:
     Residual<T> *residual_mmh = nullptr;
     Residual<T> *residual_mh = nullptr;
     Residual<T> *residual_ff = nullptr;
-    Tensor<T> *blank = nullptr;
+    Tensor<bool> *blank_mask = nullptr;
+    Tensor<T> *blank_mem = nullptr;
 };
 }
 #endif //ATTENTION_TRANSFORMER_CPP_DECODER_LAYER_H

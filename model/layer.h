@@ -21,7 +21,7 @@ public:
     {
     } 
     virtual void forward(const Tensor<T> &/*input*/, Tensor<T> &/*output*/,
-            Tensor<T> &/*mask*/, Tensor<T> &/*memory*/) 
+            const Tensor<bool> &/*mask*/, const Tensor<T> &/*memory*/) 
     {
     }
 

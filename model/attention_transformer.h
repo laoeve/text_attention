@@ -10,6 +10,7 @@
 #include <bits/stdc++.h>
 
 #include "top_model.h"
+#include "embedding.h"
 #include "layer.h"
 #include "tensor.h"
 #include "encoder.h"
@@ -64,9 +65,37 @@ public:
         const string LN_gamma_str = "a_2";
         const string LN_beta_str = "b_2";
 
+        const string prefix_em_src = "src_embed";
+        const string prefix_em_tgt = "tgt_embed";
+        const string em_str = "0.lut.weight";
+        const string pe_str = "1.pe";
         const string gen_str = "generator.proj";
 
-        /* Init model dimension parameters */
+        /* Init embedding layers */
+        Tensor<T>* lut_em_src = new Tensor<T>(
+                param_map[prefix_em_src+"."+em_str].pvals,
+                param_map[prefix_em_src+"."+em_str].pshape);
+        Tensor<T>* lut_pe_src = new Tensor<T>(
+                param_map[prefix_em_src+"."+pe_str].pvals,
+                param_map[prefix_em_src+"."+pe_str].pshape);
+
+        embed_src = new Embedding<T>(prefix_em_src, dim_embed,
+                *lut_em_src, *lut_pe_src);
+
+        Tensor<T>* lut_em_tgt = new Tensor<T>(
+                param_map[prefix_em_tgt+"."+em_str].pvals,
+                param_map[prefix_em_tgt+"."+em_str].pshape);
+        Tensor<T>* lut_pe_tgt = new Tensor<T>(
+                param_map[prefix_em_tgt+"."+pe_str].pvals,
+                param_map[prefix_em_tgt+"."+pe_str].pshape);
+
+        embed_tgt = new Embedding<T>(prefix_em_tgt, dim_embed,
+                *lut_em_tgt, *lut_pe_tgt);
+
+        embed_src->print_params( );
+        embed_tgt->print_params( );
+
+        /* Init encoder/decoder layers */
         encoder = new Encoder<T>(this, num_layers, dim_embed, num_heads, 
                 dim_ff, prefix_enc, prefix_layer, weight_str, bias_str, 
                 LN_gamma_str, LN_beta_str, sa_query_str, 
@@ -80,84 +109,102 @@ public:
                 ff_hidden_str, ff_out_str, 
                 LN_dec_mmh_str, LN_dec_mh_str, LN_dec_ff_str);
 
-        /* Get weight and bias parameters */
-        if (gen_str!="")
+        /* Init generator layer */
+        Tensor<T>* gen_w = new Tensor<T>(
+                param_map[gen_str+"."+weight_str].pvals,
+                param_map[gen_str+"."+weight_str].pshape);
+        Tensor<T>* gen_b = new Tensor<T>(
+                param_map[gen_str+"."+weight_str].pvals,
+                param_map[gen_str+"."+weight_str].pshape);
+
+        generator = new Linear<T>(gen_str, dim_embed, 
+                voca_tgt_size, *gen_w, *gen_b);
+
+        generator->print_params( );
+    }
+
+    void set_enc_mask(const Tensor<T>& input, Tensor<bool>& mask) 
+    {
+        assert(input.shape.size( )==2);
+        int num_words = input.shape[1];
+        for (int i=0; i<input.shape[0]; i++)
         {
-            Tensor<T>* gen_w = new Tensor<T>(
-                    param_map[gen_str+"."+weight_str].pvals,
-                    param_map[gen_str+"."+weight_str].pshape);
-            Tensor<T>* gen_b = new Tensor<T>(
-                    param_map[gen_str+"."+weight_str].pvals,
-                    param_map[gen_str+"."+weight_str].pshape);
+            for (int j=0; j<input.shape[1]; j++)
+            {
+                if (input[i*num_words+j]==2)
+                    mask.push_back(false);
+                else
+                    mask.push_back(true);
+            }
+        }
+        mask.shape = {1, input.shape[0], input.shape[1]};
+    }
 
-            generator = new Linear<T>(gen_str, dim_embed, 
-                    voca_tgt_size, *gen_w, *gen_b);
+    void set_dec_mask(const Tensor<T>& input, Tensor<bool>& mask)
+    {
+        vector<int> mask_shape{input.size( ), input.size( )};
+        mask.reshape(mask_shape);
+        mask.clear( ); // TODO: unsafe usage -> FIXME
+        for (int i=1; i<input.size( ); i++)
+        {
+            if (i==1) continue;
 
-            generator->print_params( );
+            for (int mask_sz=0; mask_sz<i; mask_sz++)
+            {
+                vector<bool> mask_front(mask_sz, true);
+                vector<bool> mask_back(i-mask_sz-1, false);
+                mask_front.insert(mask_front.end( ), 
+                        mask_back.begin( ), mask_back.end( ));
+                mask.insert(mask.end( ), mask_front.begin( ), mask_front.end( ));
+            }
         }
     }
 
-    void forward(const Tensor<T> &input, Tensor<T> &output) override {
+    void forward(const Tensor<T> &input, Tensor<T> &output) override 
+    {
         Tensor<T> memory{};
-        Tensor<T> src_mask{};
         Tensor<T> input_embed{};
-        std::vector<float> lut;
 
-        // making encoder mask : tensor( x for x in input != pad)
-        for(int i = 0; i < input.shape[1] ; i++){
-            if(input[(1*i)] == 2){
-                src_mask.push_back(false);
-            } else {
-                src_mask.push_back(true);
-            }
-        }
-        src_mask.shape = {1, 1, input.shape[1]};
+        /* Setup encoder mask */
+        Tensor<bool> src_mask{};
+        set_enc_mask(input, src_mask);
 
-        embed_idx(input, input_embed, TopModel<T>::dim_embed, 
-                "src_embed.0.lut.weight", "src_embed.1.pe");
-
+        /* Encoder forward */
+        embed_src->forward(input, input_embed);
         encoder->forward(input_embed, memory, src_mask);
-        
-        // encoder input : tensor([[[0]]]).embed import
-        Tensor<T> tgt_input{};
-        Tensor<T> tgt_embed{};
-        Tensor<T> tgt_mask{};
-        Tensor<T> tmp3{};
-        Tensor<T> decoder_out{};
 
-        tgt_input.push_back(0);
-        tgt_input.shape={1,1};
+        /* Decoder part operation word-by-word */
+        Tensor<T> tgt_input(vector<int>{1, 1});
+        Tensor<bool> tgt_mask{};
+        for (int i=0; i<max_len; i++)
+        {
+            /* Target mask */
+            set_dec_mask(tgt_input, tgt_mask);
 
-        // decoder mask : [1,0][1,1] ...
-        // encoder mask : same with encoder mask used in encoder
-        // Decoder loop for expect sentence
-        for(int i=0; i < max_len; i++){
-            //making tgt_mask.shape={j,j};
-            tgt_mask.clear();
-            for(int j = 1; j < tgt_input.size() ; j++){
-                tgt_mask.push_back(true);
-                if(j != 1){
-                    for(int m_size = 0; m_size < j; m_size++){      // [1,1,..,1,0, ..,0,0]
-                        std::vector<int> m_front(m_size,1); // [1,1 ...]
-                        std::vector<int> m_back(j-m_size-1,0);  // [0,0, ...]
-                        m_front.insert(m_front.end(), m_back.begin(), m_back.end());    // [1, .. ,1,0, .. ,0]
-                        tgt_mask.insert(tgt_mask.end(), m_front.begin(), m_front.end());
-                    }
-                }
-            }
-            tgt_mask.shape.clear();
-            tgt_mask.shape = {tgt_input.size(), tgt_input.size()};
+            /* Decoder forward */
+            Tensor<T> tgt_embed{ };
+            Tensor<T> dec_out{ };
+            embed_tgt->forward(tgt_input, tgt_embed);
+            decoder->forward(tgt_embed, dec_out, memory, tgt_mask, src_mask);
 
-            embed_idx(tgt_input, tgt_embed, TopModel<T>::dim_embed, "tgt_embed.0.lut.weight", "tgt_embed.1.pe");
-
-            decoder->forward(tgt_embed, decoder_out, memory, tgt_mask, src_mask);  
-            generator->forward(decoder_out, tmp3);
-            softMax.forward(tmp3, output);
-
-            //find max value of probability
-            int max_index = max_element(output.begin(), output.end()) - output.begin();
-            std::cout << "next word : " << max_index << std::endl;
+            /* Output preparation */
+            int gen_len = dec_out.shape[dec_out.shape.size( )-1];
+            Tensor<T> gen_in{};
+            gen_in.reshape(vector<int>{1, gen_len});
+            gen_in.assign(dec_out.end( )-gen_len, dec_out.end( ));
             
+            /* Generator and softmax */
+            Tensor<T> gen_out{ };
+            Tensor<T> sm_out{ };
+            generator->forward(gen_in, gen_out);
+            softMax.forward(gen_out, sm_out);
+
+            /* Find max value of probability */
+            int max_index = 
+                std::max_element(sm_out.begin( ), sm_out.end( ))-sm_out.begin( );
+            std::cout << "next word: " << max_index << std::endl;
+
+            /* Concatenation */
             tgt_input.push_back(max_index);
             tgt_input.shape = {1,tgt_input.shape[1] + 1};
         }
@@ -172,6 +219,8 @@ public:
 private:
     int voca_src_size;
     int voca_tgt_size;
+    Embedding<T>* embed_src = nullptr;
+    Embedding<T>* embed_tgt = nullptr;
     Encoder<T> *encoder = nullptr;
     Decoder<T> *decoder = nullptr;
     Linear<T> *generator = nullptr;

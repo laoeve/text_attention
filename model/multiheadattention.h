@@ -142,7 +142,8 @@ public:
     }
 
     void forward(const Tensor<T> &input, Tensor<T> &output, 
-            Tensor<T> &mask, Tensor<T> &memory) override {
+            const Tensor<bool> &mask, const Tensor<T> &memory) override 
+    {
         std::cout << "MultiheadAttention.Forward" << std::endl;
         //int dim_k = this->dim_model / this->heads;
         Tensor<T> tmp1{};
