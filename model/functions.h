@@ -130,20 +130,20 @@ namespace text_attention {
     }   */
 //    std::map<int, std::vector<float> > sentence_embed = text_attention::sentence_parsing("../sentence.csv");
 
-/*     template<typename T>
+    template<typename T>
     void tensor_print(Tensor <T> &input){
         std::cout << "Tensor Shape : ";
-        for(int i=0; i < input.shape.size() ; ++i){std::cout << "[" << input.shape[i] << "]"};
+        for(int i=0; i < input.shape.size() ; ++i){std::cout << "[" << input.shape[i] << "]";};
         std::cout << std::endl;
 
-        std::cout << "Tensor Element : ";
-        for(int i=0; i < input.shape.size() ; ++i){
-            std::cout << "Dim" << i+1 << " : "
-            for(int j=0; j < input.shape[i] ; ++j){
-                std::cout << input[i*input.shape[i]]
+        std::cout << "Tensor Element : " << std::endl;
+        for(int i=0; i < input.shape[input.shape.size() - 2] ; ++i){
+            std::cout << "Dim" << i+1 << " : ";
+            for(int j=0; j < input.shape[input.shape.size() - 1] ; ++j){
+                std::cout << input[i * input.shape[input.shape.size() - 1] + j] << " ";
             }
         }
-    } */
+    }
 
     template<typename T>
     void embed_idx(const Tensor <T> &input, Tensor <T> &output, int dim_model, std::string str_lut, std::string str_pe){
@@ -155,7 +155,7 @@ namespace text_attention {
         for(int idx = 0; idx < input.size() ; idx++){
             for(int embed = 0; embed < dim_model; embed++){
                 lut.push_back( text_attention::param_map[str_lut].pvals[input[idx]*dim_model + embed] * std::sqrt(dim_model) //Embeddings
-                        + text_attention::param_map[str_pe].pvals[input[idx]*dim_model + embed] );  // Positional Encoding
+                        + text_attention::param_map[str_pe].pvals[idx*dim_model + embed] );  // Positional Encoding
             }
         }
         output.clear();
