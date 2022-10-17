@@ -53,13 +53,10 @@ namespace text_attention {
                 }
                 assert(para_num == dim_model * headDim);
 
-/*                 std::cout << "tmp Wq : "; for(auto i : tmp_Wq->shape){std::cout << i <<" ";}; std::cout << std::endl;
-                std::cout << "tmp Wk : "; for(auto i : tmp_Wk->shape){std::cout << i <<" ";}; std::cout<< std::endl;
-                std::cout << "tmp Wv : "; for(auto i : tmp_Wv->shape){std::cout << i <<" ";}; std::cout<< std::endl; */
-                tmp_Wq->shape = {dim_model, headDim};
+                tmp_Wq->shape = {dim_model, headDim}; // {512, 64}
                 tmp_Wk->shape = {dim_model, headDim};
                 tmp_Wv->shape = {dim_model, headDim};
-                std::cout << "Verify pasing heads : " << *tmp_Wq << std::endl;
+                std::cout << "Verify passing heads : " << *tmp_Wq << std::endl;
                 w_q.push_back(tmp_Wq);
                 w_k.push_back(tmp_Wk);
                 w_v.push_back(tmp_Wv);
@@ -73,10 +70,6 @@ namespace text_attention {
                 }
                 assert(para_num == headDim);
 
-/*                 std::cout << "tmp Bq : "; for(auto i : tmp_Bq->shape){std::cout << i <<" ";}; std::cout<< std::endl;
-                std::cout << "tmp Bk : "; for(auto i : tmp_Bk->shape){std::cout << i <<" ";}; std::cout<< std::endl;
-                std::cout << "tmp Bv : "; for(auto i : tmp_Bv->shape){std::cout << i <<" ";}; std::cout<< std::endl; */
-
                 tmp_Bq->shape = {headDim};
                 tmp_Bk->shape = {headDim};
                 tmp_Bv->shape = {headDim};
@@ -89,21 +82,11 @@ namespace text_attention {
                 para_Wv.clear();
             }
 
-/*             std::cout << "Linear Element Size :" << std::endl;
-            for(auto it : (*b_q[0]).shape){std::cout << " "<< it;};
-            std::cout << std::endl;
-
-            std::cout << "Linear Element :" << std::endl;
-            int num_shape =1;
-            for(int it = 0 ; it < (*b_q[0]).shape.size() ; ++ it){num_shape *= (*b_q[0]).shape[it];};
-            for(int its = 0 ; its < num_shape+1 ; ++its  ){std::cout << " " <<(*b_q[0])[its];};
-            std::cout << std::endl; */
-
             for(int h = 0; h < heads; h +=1){
                 auto lin_q = new Linear<T>(dim_model, headDim, *w_q[h], *b_q[h]);
                 auto lin_k = new Linear<T>(dim_model, headDim, *w_k[h], *b_k[h]);
                 auto lin_v = new Linear<T>(dim_model, headDim, *w_v[h], *b_v[h]);
-                qLinear.push_back(lin_q);   //{1,128,64}
+                qLinear.push_back(lin_q);
                 kLinear.push_back(lin_k);
                 vLinear.push_back(lin_v);
             }
@@ -125,18 +108,17 @@ namespace text_attention {
 
         void forward(const Tensor<T> &input, Tensor<T> &output, Tensor<T> &mask, Tensor<T> &memory) {
             std::cout << "MultiheadAttention.Forward" << std::endl;
-            //int dim_k = this->dim_model / this->heads;
             Tensor<T> tmp1{};
 
             // lin(x) for lin, x in zip(self.linears, (query, key, value))
             tmp1.insert(tmp1.end(), input.begin(), input.end());
-            tmp1.shape.insert(tmp1.shape.end(), input.shape.begin(), input.shape.end());    //{1,128,512}
+            tmp1.shape.insert(tmp1.shape.end(), input.shape.begin(), input.shape.end());    //{1,num,512}
             std::cout << tmp1 << std::endl;
 
             if(&memory != nullptr){
                 for(auto item : (this->qLinear)){
                     auto q_tmp = new Tensor<T>{};
-                    item->forward(memory, *q_tmp);
+                    item->forward(tmp1, *q_tmp);
                     q.push_back(q_tmp);
                 }
                 for(auto item : (this->kLinear)){
@@ -146,7 +128,7 @@ namespace text_attention {
                 }
                 for(auto item : (this->vLinear)){
                     auto v_tmp = new Tensor<T>{};
-                    item->forward(tmp1, *v_tmp);
+                    item->forward(memory, *v_tmp);
                     v.push_back(v_tmp);
                 }
             } else {
@@ -168,6 +150,8 @@ namespace text_attention {
             }
             tmp1.clear();
             tmp1.shape.clear();
+            std::cout << "Linear FC Layer shape : " << *q[0] << std::endl; // {1,num,64}
+            std::cout << "from memory shape : " << *k[0] << std::endl; // {1,128,64}
 
             Tensor<T> dots{};
             Tensor<T> tmp2{};
@@ -176,10 +160,11 @@ namespace text_attention {
             // 2) scale dot attention
             // matmul(q, k^t)
             for (int h = 0; h < heads; ++h) {
-                int num = q[h]->shape[q[h]->shape.size() - 2];    // 128    len_word
+                int num_x = q[h]->shape[q[h]->shape.size() - 2];    // 128    len_word
+                int num_memory = k[h]->shape[k[h]->shape.size() - 2];    // 128    len_word
                 int d_k = q[h]->shape[q[h]->shape.size() - 1];    // 64     d_embed == d_k
-                for (int pi = 0; pi < num; ++pi) {
-                    for (int pj = 0; pj < num; ++pj) {
+                for (int pi = 0; pi < num_x; ++pi) {
+                    for (int pj = 0; pj < num_memory; ++pj) {
                         T val = 0;
                         for (int pk = 0; pk < d_k; ++pk) {
                             val += (*q[h])[pi * d_k + pk] * (*k[h])[pj * d_k + pk] * scale; /* added scale product */
@@ -188,14 +173,10 @@ namespace text_attention {
                     }
                 }
                 dots.shape.clear();
-                dots.shape.insert(dots.shape.begin(), k[h]->shape.begin(), k[h]->shape.end());   // {1,128,64}
-                dots.shape[dots.shape.size() - 1] = (*k[h]).shape[(*k[h]).shape.size() - 2];  //  scores{1,128,128}
-/* 
-                std::cout << "dots shape : " << dots.shape[0] << " " << dots.shape[1] << " " << dots.shape[2] << std::endl;
-                std::cout << "mask shape : " << mask.shape[0] << " " << mask.shape[1] << " " << mask.shape[2] << std::endl;
-                std::cout << "verify dots Tensor : " << dots << std::endl;
- */
-                if (&mask != nullptr) {
+                dots.shape.insert(dots.shape.end(), (*q[h]).shape.begin(), (*q[h]).shape.end());   // {1,num,64}
+                dots.shape[dots.shape.size() - 1] = (*k[h]).shape[(*k[h]).shape.size() - 2] ;   // {1,num,num}
+
+                if (&memory == nullptr) {
                     if(mask.shape[mask.shape.size()-1] == mask.shape[mask.shape.size()-2]){     //condition : src_mask {num * 128}
                         for (int p = 0; p < mask.shape[1]; ++p) {   // count num
                             for (int j = 0; j < mask.shape[2]; ++j){   //count 128
@@ -211,9 +192,10 @@ namespace text_attention {
                                     dots[mask.shape[2] * p + j] = -1e9;
                                 }
                             }
-                        }                        
+                        }
                     }
                 }
+                std::cout << "verify dots Tensor : " << dots << std::endl;
 
                 Tensor<T> attn{};
                 softMax.forward(dots, attn);    //softmax
@@ -221,35 +203,33 @@ namespace text_attention {
                 dots.shape.clear();
 
                 // matmul with v
-                tmp2.shape = q[h]->shape;   // {1,128,64}
+                tmp2.shape = q[h]->shape;
                 for (int pi = 0; pi < attn.shape[1]; ++pi) {
                     for (int pj = 0; pj < v[h]->shape[1]; ++pj) {
                         T val2 = 0;
                         for (int pk = 0; pk < attn.shape[2]; ++pk) {
                             val2 += attn[pi * attn.shape[2] + pk] *
                                 (*v[h])[pk * v[h]->shape[2] + pj];
-
                         }
                         tmp2.push_back(val2);
                     }
                 }
                 attn.clear();
-                attn.shape.clear();
+                attn.shape.clear();    
 
-                for(int cc_row = 0; cc_row < num; ++cc_row){      //concat matrix
-                    tmp3.insert(tmp3.begin() + (h * (cc_row+1) * d_k),
-                    // tmp3.insert(tmp3.begin() + (h * (cc_row+1) * d_k) + (cc_row * d_k),
+                for(int cc_row = 0; cc_row < num_x; ++cc_row){      //concat matrix
+                    tmp3.insert(tmp3.begin() + (h * (cc_row+1) * d_k) + (cc_row * d_k),
                     tmp2.begin() + (cc_row * d_k), tmp2.begin() + ((cc_row+1) * d_k)); // tmp2 line by line
                 }
             }
 
-            tmp3.shape = tmp2.shape;    // {1,128,64}
-            tmp3.shape[2] = tmp3.shape[2] * heads ; // {1, 128,512}
+            tmp3.shape = tmp2.shape;    // {1,num,num}
+            tmp3.shape[2] = tmp3.shape[2] * heads ; // {1, num,512}
             std::cout << tmp3 << std::endl;
             tmp2.clear();
             tmp2.shape.clear();
 
-            // 3) final linear
+            // 3) out linear
             Tensor<T> tmp4{};
             outLinear->forward(tmp3, tmp4);
             tmp3.clear();
@@ -261,25 +241,45 @@ namespace text_attention {
             output.shape.insert(output.shape.end(), tmp4.shape.begin(), tmp4.shape.end());
             tmp4.clear();
             tmp4.shape.clear();
+
+            q.clear();
+            k.clear();
+            v.clear();
         }
 
         ~MultiheadAttention() {
-            if (qLinear != nullptr) {
-                delete qLinear;
-                qLinear = nullptr;
+                   
+            for (int i = 0; i < qLinear.size(); ++i) {
+                delete qLinear[i];
             }
-            if (kLinear != nullptr) {
-                delete kLinear;
-                kLinear = nullptr;
+            for (int i = 0; i < kLinear.size(); ++i) {
+                delete kLinear[i];
             }
-            if (vLinear != nullptr) {
-                delete vLinear;
-                vLinear = nullptr;
+            for (int i = 0; i < vLinear.size(); ++i) {
+                delete vLinear[i];
             }
             if (outLinear != nullptr) {
                 delete outLinear;
                 outLinear = nullptr;
+            }   
+            for (int i = 0; i < w_q.size(); ++i) {
+                delete w_q[i];
             }
+            for (int i = 0; i < w_k.size(); ++i) {
+                delete w_k[i];
+            }
+            for (int i = 0; i < w_v.size(); ++i) {
+                delete w_v[i];
+            }
+            for (int i = 0; i < b_q.size(); ++i) {
+                delete b_q[i];
+            }
+            for (int i = 0; i < b_k.size(); ++i) {
+                delete b_k[i];
+            }
+            for (int i = 0; i < b_v.size(); ++i) {
+                delete b_v[i];
+            }  
         }
 
         long long parameterCount() {

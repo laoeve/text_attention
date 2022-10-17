@@ -28,8 +28,8 @@ namespace text_attention {
 
         void forward(const Tensor <T> &input, Tensor <T> &output, Tensor<T> &mask, Tensor<T> &memory) {
             Tensor<T> tmp{};
-            layerNorm->forward(input, tmp);
-            fn->forward(tmp, output, mask, memory);
+            fn->forward(input, tmp, mask, memory);
+            layerNorm->forward(tmp, output);
 
         }
 

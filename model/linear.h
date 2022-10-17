@@ -46,8 +46,8 @@ namespace text_attention {
         void forward(const Tensor <T> &input, Tensor <T> &output) {
             assert(input.shape.size() and input.shape.back() == this->in_feature);
             output.shape.clear();
-            output.shape.insert(output.shape.end(), input.shape.begin(), input.shape.end());    //input{1,128,512}
-            output.shape.back() = out_feature;  //output{1,128,64}
+            output.shape.insert(output.shape.end(), input.shape.begin(), input.shape.end());    //input{1,num,512}
+            output.shape.back() = out_feature;  //output{1,num,64}
             std::vector<T> tmp{};
 
             for (auto pos = 0; pos < input.size(); pos += in_feature) {

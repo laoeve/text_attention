@@ -11,7 +11,6 @@
 #include <vector>
 #include "tensor.h"
 #include "layer.h"
-//#include "patch_merging.h"
 #include "encoderLayer.h"
 
 namespace text_attention {
@@ -24,12 +23,17 @@ namespace text_attention {
                 auto enc = new EncoderLayer<T>(num_layer, dim_model, dim_ff, heads, max_len, str_key_layer + std::to_string(i) + ".");
                 layers.push_back(enc);
             }
+            layerNorm = new LayerNorm<T>(dim_model, text_attention::param_map["encoder.norm.a_2"].pvals, text_attention::param_map["encoder.norm.a_2"].pvals);
         }
 
         ~Encoder() {
             for (int i = 0; i < layers.size(); ++i) {
                 delete layers[i];
             }
+            if (layerNorm != nullptr) {
+                delete layerNorm;
+                layerNorm = nullptr;
+            }   
         }
 // changed from w-msa
         void forward(const Tensor<T> &input, Tensor<T> &output, Tensor<T> &mask) { 
@@ -39,29 +43,11 @@ namespace text_attention {
             tmp = input;
             for (auto blockPtr: layers) {
                 std::cout << "Fwd Encoder." << layer_num++ << std::endl;
-                
                 Tensor<T> tmp_loop{};
                 blockPtr->forward(tmp, tmp_loop, mask);
                 tmp = tmp_loop;
             }
-            output = tmp;
-            /*
-            Tensor<T> tmp{};
-            Tensor<T> tmp1{};
-            Tensor<T> tmp2{};
-            Tensor<T> tmp3{};
-            Tensor<T> tmp4{};
-            Tensor<T> tmp5{};
-            Tensor<T> tmp6{};
-            Tensor<T> tmp7{};
-            enc1.forward(input, tmp1);
-            enc2.forward(tmp1, tmp2);
-            enc3.forward(tmp2, tmp3);
-            enc4.forward(tmp3, tmp4);
-            enc5.forward(tmp4, tmp5);
-            enc6.forward(tmp5, tmp6);   
-            layerNorm.forward(tmp6, tmp7);
-            */
+            layerNorm->forward(tmp, output);
 
         }
 
@@ -76,6 +62,7 @@ namespace text_attention {
 
     private:
         std::vector<EncoderLayer<T> *> layers;
+        LayerNorm <T> *layerNorm = nullptr;
     };
 }
 

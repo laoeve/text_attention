@@ -147,7 +147,7 @@ namespace text_attention {
 
     template<typename T>
     void embed_idx(const Tensor <T> &input, Tensor <T> &output, int dim_model, std::string str_lut, std::string str_pe){
-        std::cout << "Embedding : " << input << std::endl;
+        std::cout << "Embedding : " << input << " to ";
 
         std::vector<float> lut;
         

@@ -14,8 +14,8 @@ namespace text_attention {
     public:
         void forward(const Tensor <T> &input, Tensor <T> &output) {
             int dim = input.shape.back();
-            output.clear();
-            output.shape = input.shape;
+            output.shape.clear();
+            output.shape.insert(output.shape.end(),input.shape.begin(),input.shape.end());
             for (int i = 0; i < input.size(); i += dim) {
                 T sum = 0;
                 for (int j = 0; j < dim; ++j) {

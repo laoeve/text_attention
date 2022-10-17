@@ -30,9 +30,6 @@ namespace text_attention {
             t_tran(*w2_w);
             w2_b->insert(w2_b->end(), text_attention::param_map[str_key_layer+"w_2.bias"].pvals.begin(), text_attention::param_map[str_key_layer+"w_2.bias"].pvals.end());
             w2_b->shape.insert(w2_b->shape.end(), text_attention::param_map[str_key_layer+"w_2.bias"].pshape.begin(), text_attention::param_map[str_key_layer+"w_2.bias"].pshape.end());
-            std::cout << "FFNN Weight : ";
-            std::cout << *w1_w << std::endl;
-            std::cout << *w2_w << std::endl;
             linear1 = new Linear<T>(dim_model, dim_ff, *w1_w, *w1_b);
             linear2 = new Linear<T>(dim_ff, dim_model, *w2_w, *w2_b);
         }

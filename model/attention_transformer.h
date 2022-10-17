@@ -68,7 +68,9 @@ namespace text_attention {
             Tensor<T> tgt_embed{};
             Tensor<T> tgt_mask{};
             Tensor<T> tmp3{};
+            Tensor<T> tmp4{};
             Tensor<T> decoder_out{};
+            Tensor<T> decoder_last{};
 
             tgt_input.push_back(0);
             tgt_input.shape={1,1};
@@ -94,19 +96,33 @@ namespace text_attention {
                 tgt_mask.shape = {tgt_input.size(), tgt_input.size()};
 
                 embed_idx(tgt_input, tgt_embed, dim_model, "tgt_embed.0.lut.weight", "tgt_embed.1.pe");
+                std::cout << tgt_embed << std::endl;
+                
+                decoder->forward(tgt_embed, decoder_out, memory, tgt_mask, src_mask);
 
-                decoder->forward(tgt_embed, decoder_out, memory, tgt_mask, src_mask);  
-                generator->forward(decoder_out, tmp3);
-                softMax.forward(tmp3, output);
-                tmp3.clear();
+                std::cout << "decoder out : " << decoder_out << std::endl;
+                decoder_last.insert(decoder_last.end(), decoder_out.end()- decoder_out.shape[decoder_out.shape.size() -1], decoder_out.end());
+                decoder_last.shape = {1, decoder_out.shape[decoder_out.shape.size() -1]};
+                std::cout << "decoder out last : " << decoder_last << std::endl;
+                generator->forward(decoder_last, tmp3);
+                decoder_last.clear();
+                decoder_out.clear();
+
+                softMax.forward(tmp3, tmp4);
 
                 //find max value of probability
-                int max_index = max_element(output.begin(), output.end()) - output.begin();
+                int max_index = max_element(tmp4.begin(), tmp4.end()) - tmp4.begin();
+                tmp3.clear();
+                tmp4.clear();
                 std::cout << "next word : " << max_index << std::endl;
                 
                 tgt_input.push_back(max_index);
-                tgt_input.shape = {1,tgt_input.shape[1] + 1};
+                ++tgt_input.shape[1];
+                std::cout << "Result Sentence : ";
+                for(auto i : tgt_input){ std::cout << i << " ";}
+                std::cout << std::endl;
             }
+            output = tgt_input;
         }
 
         long long parameterCount() {
