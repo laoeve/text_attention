@@ -80,6 +80,39 @@ int main(int argc, char* argv[]) {
     std::cout << "source dictionary size: " << voca_src.size( ) << std::endl;
     std::cout << "target dictinoary size: " << voca_tgt.size( ) << std::endl;
 
+    vector<int> opa_shape{4, 3};
+    Tensor<data_t> opa(opa_shape);
+    opa[0] = 0; opa[1] = 1; opa[2] = 2; 
+    opa[3] = 3; opa[4] = 4; opa[5] = 5;
+
+    opa[6] = 5; opa[7] = 4; opa[8] = 3; 
+    opa[9] = 2; opa[10] = 1; opa[11] = 0;
+
+//    opa[12] = 9; opa[13] = 8; opa[14] = 7; 
+//    opa[15] = 6; opa[16] = 5; opa[17] = 4;
+
+    vector<int> opw_shape{3, 4};
+    Tensor<data_t>* opw = new Tensor<data_t>(opw_shape);
+    (*opw)[0] = 1; (*opw)[1] = 2; (*opw)[2] = 3; (*opw)[3] = 4;
+    (*opw)[4] = 5; (*opw)[5] = 6; (*opw)[6] = 7; (*opw)[7] = 8;
+    (*opw)[8] = 9; (*opw)[9] = 10; (*opw)[10] = 11; (*opw)[11] = 12;
+
+    vector<int> opb_shape{4};
+    Tensor<data_t>* opb = new Tensor<data_t>(opb_shape);
+    (*opb)[0] = 7;
+    (*opb)[1] = 7;
+    (*opb)[2] = 7;
+    (*opb)[3] = 7;
+
+    Linear<data_t>* lin = new Linear<data_t>("testlinear", 3, 4, *opw, *opb);
+
+    Tensor<data_t> out;
+    lin->forward(opa, out);
+    opa.print_all( );
+    out.print_all( );
+
+    assert(0);
+
     /* Init models */
     TopModel<data_t>* model = nullptr;
     if (model_arg=="transformer") 
@@ -134,7 +167,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Input tensor dimension: " << input << std::endl;
 
     /* Run model */
-    model->forward(input, output);
+//    model->forward(input, output);
 
 //    delete model;
     return 0;

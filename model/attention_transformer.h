@@ -141,12 +141,13 @@ public:
         Tensor<bool> src_mask{};
         TopModel<T>::set_enc_mask(input, src_mask);
 
-        std::cout << "CHECK " << input << std::endl;
-        std::cout << "CHECK " << src_mask << std::endl;
+        input.print_all( );
+        src_mask.print_all( );
 
-//        /* Encoder forward */
-//        embed_src->forward(input, input_embed);
-//        encoder->forward(input_embed, enc_out_inter, src_mask);
+        /* Encoder forward */
+        embed_src->forward(input, input_embed);
+        input_embed.print_all( );
+        encoder->forward(input_embed, enc_out_inter, src_mask);
 //        ln_encoder->forward(enc_out_inter, enc_out_fin);
 //
 //        /* Decoder part operation word-by-word */
@@ -166,7 +167,7 @@ public:
 //            ln_decoder->forward(dec_out_inter, dec_out_fin);
 //
 //            /* Output preparation */
-//            int gen_len = dec_out_fin.shape[dec_out_fin.shape.size( )-1];
+//            int gen_len = dec_out_fin.shape[dec_out_fin.get_dims( )-1];
 //            Tensor<T> gen_in(vector<int>{1, gen_len}, 
 //                    dec_out_fin.end( )-gen_len, dec_out_fin.end( ));
 //

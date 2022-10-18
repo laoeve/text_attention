@@ -127,7 +127,7 @@ public:
                     prefix_str+"."+sa_value_str+".HD["+to_string(h)+"]", 
                     dim_model, headDim, *w_v[h], *b_v[h]);
 
-            qLinear.push_back(lin_q);   //{1,128,64}
+            qLinear.push_back(lin_q);
             kLinear.push_back(lin_k);
             vLinear.push_back(lin_v);
 
@@ -153,7 +153,7 @@ public:
         tmp1.shape.insert(tmp1.shape.end(), input.shape.begin(), input.shape.end());    //{1,128,512}
         std::cout << tmp1 << std::endl;
 
-        if(&memory != nullptr){
+        if(memory.is_void( )==false){
             for(auto item : (this->qLinear)){
                 auto *q_tmp = new Tensor<T>{};
                 item->forward(memory, *q_tmp);
@@ -215,7 +215,7 @@ public:
             std::cout << "mask shape : " << mask.shape[0] << " " << mask.shape[1] << " " << mask.shape[2] << std::endl;
             std::cout << "verify dots Tensor : " << dots << std::endl;
 */
-            if (&mask != nullptr) {
+            if (mask.is_void( )==false) {
                 if(mask.shape[mask.shape.size()-1] == mask.shape[mask.shape.size()-2]){     //condition : src_mask {num * 128}
                     for (int p = 0; p < mask.shape[1]; ++p) {   // count num
                         for (int j = 0; j < mask.shape[2]; ++j){   //count 128
@@ -283,23 +283,12 @@ public:
         tmp4.shape.clear();
     }
 
-    ~MultiheadAttention() {
-        if (qLinear != nullptr) {
-            delete qLinear;
-            qLinear = nullptr;
-        }
-        if (kLinear != nullptr) {
-            delete kLinear;
-            kLinear = nullptr;
-        }
-        if (vLinear != nullptr) {
-            delete vLinear;
-            vLinear = nullptr;
-        }
-        if (outLinear != nullptr) {
-            delete outLinear;
-            outLinear = nullptr;
-        }
+    ~MultiheadAttention() 
+    {
+        delete qLinear;
+        delete kLinear;
+        delete vLinear;
+        delete outLinear;
     }
 
     uint64_t parameterCount() override {

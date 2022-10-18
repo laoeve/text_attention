@@ -23,9 +23,7 @@ public:
     }
 
     uint64_t parameterCount() override {
-        if (true)   //use_bias
-            return weights->size() + bias->size();
-        return weights->size();
+        return weights->size() + bias->size();
     }
 
     ~Linear() {
@@ -40,48 +38,81 @@ public:
             << " bias.shape=" << *bias << std::endl;
     }
 
-    /**
-     *
-     * @param input DIM x INPUT_FEATURE     //d_model   512
-     * @param output DIM X OUTPUT_FEATURE   //d_k   64
-     */
-    void forward(const Tensor <T> &input, Tensor <T> &output) override {
-        std::cout << "linear : " << input << std::endl;
-        std::cout << in_feature <<std::endl;
-        assert(input.shape.size() and input.shape.back() == in_feature);
-        output.shape.clear();
-        output.shape.insert(output.shape.end(), input.shape.begin(), input.shape.end());    //input{1,128,512}
-        output.shape.back() = out_feature;  //output{1,128,64}
-        std::vector<T> tmp{};
-        int a,b = 1;
-
-        for (auto pos = 0; pos < input.size(); pos += in_feature) {
-            if (true) { 
-                for(int idx_a = 0 ; idx_a < out_feature ; idx_a ++){
-                    b++;
-                    tmp.push_back(bias->at(idx_a));
-                }
-            }
-
-            for (int j = 0; j < out_feature; ++j) {
-                for (int i = 0; i < in_feature; ++i) {
-                    a++;
-                    tmp[j] += input[pos + i] * weights->at(j + i * out_feature);
-                }   //weight{1,512,64}
-            }
-            output.insert(output.end(), tmp.begin(), tmp.end());
-            tmp.clear();
+    void forward(const Tensor <T> &input, Tensor <T> &output) override 
+    {
+        if (is_operable(input)==false)
+        {
+            std::cerr << "Error: dimension error" << std::endl;
+            assert(0);
+            exit(1);
         }
-/* 
-        std::cout << "for bias : " << b << std::endl;
-        std::cout << "for matmul : " << a << std::endl;
 
-        std::cout << "Linear input   : " << input << std::endl;
-        std::cout << "Linear output  : " << output << std::endl; */
-        assert(output.size() == ((input.size() / in_feature) * out_feature));
-    }     
+        multiply(input, output);
+    }
 
 private:
+    void multiply(const Tensor<T>& input, Tensor<T>& output)
+    {
+        /* Determine shapes of operators */
+        int num_input = 1;
+        int num_row = input.shape[0];
+        vector<int> out_shape;
+        if (input.get_dims( )==3)
+        {
+            num_input = input.shape[0];
+            num_row = input.shape[1];
+            out_shape.push_back(num_input);
+            out_shape.push_back(num_row);
+            out_shape.push_back(out_feature);
+        }
+        else
+        {
+            out_shape.push_back(num_row);
+            out_shape.push_back(out_feature);
+        }
+        output.reshape(out_shape);
+        
+        uint64_t sz_instack = num_row*in_feature;
+        uint64_t sz_outstack = num_row*out_feature;
+
+        /* Multiply & add for each stack */
+        for (int n=0; n<num_input; n++)
+        {
+            for (int i=0; i<num_row; i++)
+            {
+                for (int j=0; j<out_feature; j++)
+                {
+                    output[n*sz_outstack+i*out_feature+j] += (*bias)[j];
+                    for (int k=0; k<in_feature; k++)
+                    {
+                        output[n*sz_outstack+i*out_feature+j] +=
+                            (*weights)[k*out_feature+j]*
+                            input[n*sz_instack+i*in_feature+k];
+                    }
+                }
+            }
+        }
+    }
+
+    bool is_operable(const Tensor<T>& op)
+    {
+        /* 
+         * Dimension of '3' means multiple inputs 
+         * op can be seen as [#INPUT x #WORDS x INPUT_FEATURE]
+         * Each input is applied to matrix multiplication,
+         * finally stack (=concatenate) all multiplied results
+         * */
+        uint64_t num_dims = op.get_dims( );
+        if (num_dims>3 || num_dims==1 || num_dims==0)
+            return false;
+
+        int dim_op = op.shape[num_dims-1];
+        if (dim_op!=in_feature)
+            return false;
+
+        return true;
+    }
+
     Tensor<T> *weights = nullptr; 
     Tensor<T> *bias = nullptr;
     std::string name;

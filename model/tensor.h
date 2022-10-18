@@ -163,7 +163,8 @@ public:
         }
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const Tensor<T> &vec) {
+    friend std::ostream &operator<<(std::ostream &os, const Tensor<T> &vec) 
+    {
         int cnt = 1;
 //        os << "[" << vec.size() << "]";
         os << "[";
@@ -183,14 +184,53 @@ public:
             exit(1);
         }
 
-        os << "[";
-        for (int i=0; i<vec.size( ); i++)
-            os << vec[i] << " ";
-        os << "]";
+//        os << "[";
+//        for (int i=0; i<vec.size( ); i++)
+//            os << vec[i] << " ";
+//        os << "]";
 
         return os;
     }
-    
+
+    void print_all( ) const
+    {
+        int cnt = 1;
+        std::cout << "[";
+        for (int i = 0; i < shape.size(); ++i) {
+            if (i)
+                std::cout << ", ";
+            std::cout << shape[i];
+            cnt *= shape[i];
+        }
+        std::cout << "] ";
+
+        if (cnt!=this->size( ))
+        {
+            std::cerr << "Error: shape size does not match "
+                << "the number of elements" << std::endl; 
+            assert(0);
+            exit(1);
+        }
+
+        std::cout << "[";
+        for (int i=0; i<this->size( ); i++)
+            std::cout << this->at(i) << " ";
+        std::cout << "]" << std::endl;
+    }
+
+    bool is_void( ) const
+    {
+        bool rv = false;
+        if (shape.size( )==0 && this->size( )==0)
+            rv = true;
+        return rv;
+    }
+
+    uint64_t get_dims( ) const
+    {
+        return shape.size( );
+    }
+
     TensorShape shape;
 };
 }
