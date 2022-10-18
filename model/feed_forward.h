@@ -60,8 +60,6 @@ public:
     void forward(const Tensor <T> &input, Tensor <T> &output, 
             const Tensor<bool> &/*mask*/, const Tensor<T> &memory) override 
     {
-        std::cout << "FFNN.Forward" << std::endl;
-
         Tensor<T> h2out{};
         linear_h->forward(input, h2out);
 

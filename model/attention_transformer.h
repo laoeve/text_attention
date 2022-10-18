@@ -141,46 +141,50 @@ public:
         Tensor<bool> src_mask{};
         TopModel<T>::set_enc_mask(input, src_mask);
 
-        /* Encoder forward */
-        embed_src->forward(input, input_embed);
-        encoder->forward(input_embed, enc_out_inter, src_mask);
-        ln_encoder->forward(enc_out_inter, enc_out_fin);
+        std::cout << "CHECK " << input << std::endl;
+        std::cout << "CHECK " << src_mask << std::endl;
 
-        /* Decoder part operation word-by-word */
-        Tensor<T> tgt_input(vector<int>{1, 1});
-        Tensor<bool> tgt_mask{};
-        for (int i=0; i<max_len; i++)
-        {
-            /* Setup target mask */
-            TopModel<T>::set_dec_mask(tgt_input, tgt_mask);
-
-            /* Decoder forward */
-            Tensor<T> tgt_embed{ };
-            Tensor<T> dec_out_inter{ }; // intermediate output tensor from decoder
-            Tensor<T> dec_out_fin{ };   // final output tensor from decoder LN
-            embed_tgt->forward(tgt_input, tgt_embed);
-            decoder->forward(tgt_embed, dec_out_inter, enc_out_fin, tgt_mask, src_mask);
-            ln_decoder->forward(dec_out_inter, dec_out_fin);
-
-            /* Output preparation */
-            int gen_len = dec_out_fin.shape[dec_out_fin.shape.size( )-1];
-            Tensor<T> gen_in(vector<int>{1, gen_len}, dec_out_fin.end( )-gen_len, dec_out_fin.end( ));
-
-            /* Generator and softmax */
-            Tensor<T> gen_out{ };
-            Tensor<T> sm_out{ };
-            generator->forward(gen_in, gen_out);
-            softMax.forward(gen_out, sm_out);
-
-            /* Find max value of probability */
-            int max_index = 
-                std::max_element(sm_out.begin( ), sm_out.end( ))-sm_out.begin( );
-            std::cout << "next word: " << max_index << std::endl;
-
-            /* Concatenation */
-            tgt_input.reshape(vector<int>{1, tgt_input.shape[1]+1});
-            tgt_input[tgt_input.shape[1]-1] = max_index;
-        }
+//        /* Encoder forward */
+//        embed_src->forward(input, input_embed);
+//        encoder->forward(input_embed, enc_out_inter, src_mask);
+//        ln_encoder->forward(enc_out_inter, enc_out_fin);
+//
+//        /* Decoder part operation word-by-word */
+//        Tensor<T> tgt_input(vector<int>{1, 1});
+//        Tensor<bool> tgt_mask{};
+//        for (int i=0; i<max_len; i++)
+//        {
+//            /* Setup target mask */
+//            TopModel<T>::set_dec_mask(tgt_input, tgt_mask);
+//
+//            /* Decoder forward */
+//            Tensor<T> tgt_embed{ };
+//            Tensor<T> dec_out_inter{ }; // intermediate output tensor from decoder
+//            Tensor<T> dec_out_fin{ };   // final output tensor from decoder LN
+//            embed_tgt->forward(tgt_input, tgt_embed);
+//            decoder->forward(tgt_embed, dec_out_inter, enc_out_fin, tgt_mask, src_mask);
+//            ln_decoder->forward(dec_out_inter, dec_out_fin);
+//
+//            /* Output preparation */
+//            int gen_len = dec_out_fin.shape[dec_out_fin.shape.size( )-1];
+//            Tensor<T> gen_in(vector<int>{1, gen_len}, 
+//                    dec_out_fin.end( )-gen_len, dec_out_fin.end( ));
+//
+//            /* Generator and softmax */
+//            Tensor<T> gen_out{ };
+//            Tensor<T> sm_out{ };
+//            generator->forward(gen_in, gen_out);
+//            softMax.forward(gen_out, sm_out);
+//
+//            /* Find max value of probability */
+//            int max_index = 
+//                std::max_element(sm_out.begin( ), sm_out.end( ))-sm_out.begin( );
+//            std::cout << "next word: " << max_index << std::endl;
+//
+//            /* Concatenation */
+//            tgt_input.reshape(vector<int>{1, tgt_input.shape[1]+1});
+//            tgt_input[tgt_input.shape[1]-1] = max_index;
+//        }
     }
 
     uint64_t parameterCount() 

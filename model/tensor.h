@@ -22,11 +22,23 @@ public:
         *this = in_tensor;
     }
 
-    Tensor(std::vector<T>& values, std::vector<int>& shape) 
+    Tensor(const std::vector<T>& values, const std::vector<int>& shape)
+    : shape(shape)
     {
-        this->insert(this->end( ), values.begin( ), values.end( ));
-        this->shape = shape;
-        std::fill(this->begin( ), this->end( ), 0);
+        uint64_t mult = 1;
+        for (int i=0; i<shape.size( );i++)
+            mult *= shape[i];
+        this->resize(mult);
+
+        if (this->size( )!=values.end( )-values.begin( ))
+        {
+            std::cerr << "Error: shape size does not match "
+                "the number of inserting elements" << std::endl;
+            assert(0);
+            exit(1);
+        }
+        else
+            this->assign(values.begin( ), values.end( ));
     }
 
     Tensor(const std::vector<int> shape_,
