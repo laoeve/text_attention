@@ -73,18 +73,6 @@ int main(int argc, char* argv[]) {
     std::cout << "source dictionary size: " << voca_src.size( ) << std::endl;
     std::cout << "target dictinoary size: " << voca_tgt.size( ) << std::endl;
 
-    Tensor<data_t> test(vector<int>{1, 4});
-    test[0] = 3; test[1] = 5; test[2] = 7; test[3] = 33;
-    std::cout << "CHECK " << test << std::endl;
-    test.reshape(vector<int>{1, 5});
-    std::cout << "CHECK " << test << std::endl;
-    test[4] = 99;
-    std::cout << "CHECK " << test << std::endl;
-
-
-
-    assert(0);
-
     /* Init models */
     TopModel<data_t>* model = nullptr;
     if (model_arg=="transformer") 
