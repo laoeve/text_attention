@@ -42,7 +42,7 @@ public:
     {
         if (is_operable(input)==false)
         {
-            std::cerr << "Error: dimension error" << std::endl;
+            std::cerr << "Error: dimension error on " << name << std::endl;
             assert(0);
             exit(1);
         }
@@ -51,6 +51,7 @@ public:
     }
 
 private:
+    //TODO: optimize in future as another function if possible
     void multiply(const Tensor<T>& input, Tensor<T>& output)
     {
         /* Determine shapes of operators */
@@ -106,8 +107,7 @@ private:
         if (num_dims>3 || num_dims==1 || num_dims==0)
             return false;
 
-        int dim_op = op.shape[num_dims-1];
-        if (dim_op!=in_feature)
+        if (op.shape[num_dims-1]!=in_feature)
             return false;
 
         return true;

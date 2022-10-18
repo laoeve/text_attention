@@ -39,31 +39,71 @@ public:
         return 0;
     }
 
-    void forward(const Tensor <T> &input, Tensor <T> &output) override {
-        assert(input.shape[input.shape.size() - 1] == dim);
-        output.shape.clear();
-        output.shape.insert(output.shape.end(), input.shape.begin(), input.shape.end());
-        for (int i = 0; i < input.size(); i += dim) {
-            // Var(x) = E(x^2) - E(x)^2
-            T avg = 0;
-            T avg2 = 0;
-            T sum = 0;
-            T sum2 = 0;
-            for (int j = 0; j < dim; ++j) {
-                sum += input[i + j];
-                sum2 += input[i + j] * input[i + j];
-            }
-            avg = sum / dim, avg2 = sum2 / dim;
-            T varx = avg2 - avg * avg;
+    void forward(const Tensor <T> &input, Tensor <T> &output) override 
+    {
+        if (is_operable(input)==false)
+        {
+            std::cerr << "Error: dimension error on " << name << std::endl;
+            assert(0);
+            exit(1);
+        }
 
-            // y = \frac{x - E[x]}{\sqrt{Var[x] + \epsilon}} * \gamma + \beta
-            for (int j = 0; j < dim; ++j) {
-                output.push_back((input[i + j] - avg) / sqrt(varx + eps) * (double)gamma->at(j) + (double)beta->at(j));
+        /* Determine shapes of operators */
+        int num_input = 1;
+        int num_row = input.shape[0];
+        if (input.get_dims( )==3)
+        {
+            num_input = input.shape[0];
+            num_row = input.shape[1];
+        }
+        else if (input.get_dims( )==1)
+            num_row = 1;
+        output.reshape(input.shape);
+
+        uint64_t sz_stack = num_row*dim;
+
+        /* Layer normalization */
+        for (int n=0; n<num_input; n++)
+        {
+            for (int i=0; i<num_row; i++)
+            {
+                /* Mean */
+                float mean_x = 0.;
+                for (int j=0; j<dim; j++)
+                    mean_x += input[n*sz_stack+i*dim+j];
+                mean_x /= dim;
+
+                /* Variance */
+                float var_x = 0.;
+                for (int j=0; j<dim; j++)
+                    var_x += (input[n*sz_stack+i*dim+j]-mean_x)*
+                        (input[n*sz_stack+i*dim+j]-mean_x);
+                var_x /= dim;
+
+                /* Normalization */
+                float denominator = sqrt(var_x+eps);
+                for (int j=0; j<dim; j++)
+                {
+                    float norm = (input[n*sz_stack+i*dim+j]-mean_x)/denominator;
+                    output[n*sz_stack+i*dim+j] = norm*(*gamma)[j]+(*beta)[j];
+                }
             }
         }
     }
 
 private:
+    bool is_operable(const Tensor<T>& op)
+    {
+        uint64_t num_dims = op.get_dims( );
+        if (num_dims>3 || num_dims==0)
+            return false;
+
+        if (op.shape[num_dims-1]!=dim)
+            return false;
+
+        return true;
+    }
+
     T eps;
     std::vector<T> *gamma = nullptr; 
     std::vector<T> *beta = nullptr; 
