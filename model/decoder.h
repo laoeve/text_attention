@@ -53,41 +53,17 @@ public:
         }
     }
     
-    // changed from w-msa
     void forward(const Tensor<T> &input, Tensor<T> &output, 
-            Tensor<T> &memory, Tensor<bool> &tgt_mask, Tensor<bool> &src_mask) { 
-        Tensor<T> tmp{};
+            const Tensor<T> &memory, const Tensor<bool> &tgt_mask, 
+            const Tensor<bool> &src_mask) { 
+        Tensor<T> tmp_in(input);
         int layer_num = 0;
-        tmp = input;
         for (auto blockPtr: layers) {
-            std::cout << "Fwd Decoder." << layer_num++ << std::endl;
-            Tensor<T> tmp_loop{};
-            blockPtr->forward(tmp, memory, tmp_loop, tgt_mask, src_mask);
-            tmp = tmp_loop;
+            std::cout << "Forward pass of decoder[" << layer_num++ << "]" << std::endl;
+
+            blockPtr->forward(tmp_in, output, memory, tgt_mask, src_mask);
+            tmp_in = output;
         }
-        output.clear();
-        output.shape.clear();
-        output.insert(output.end(), tmp.begin(), tmp.end());
-        output.shape.insert(output.shape.end(), tmp.shape.begin(), tmp.shape.end());
-
-        /*
-        Tensor<T> tmp{};
-        Tensor<T> tmp1{};
-        Tensor<T> tmp2{};
-        Tensor<T> tmp3{};
-        Tensor<T> tmp4{};
-        Tensor<T> tmp5{};
-        Tensor<T> tmp6{};
-        Tensor<T> tmp7{};
-        enc1.forward(input, tmp1);
-        enc2.forward(tmp1, tmp2);
-        enc3.forward(tmp2, tmp3);
-        enc4.forward(tmp3, tmp4);
-        enc5.forward(tmp4, tmp5);
-        enc6.forward(tmp5, tmp6);   
-        layerNorm.forward(tmp6, tmp7);
-        */
-
     }
 
     uint64_t parameterCount() override {

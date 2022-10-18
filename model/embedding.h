@@ -42,6 +42,11 @@ public:
 
     void forward(const Tensor<T>& input, Tensor<T>& output) override
     {
+        /* Set shape */
+        std::vector<int> out_shape = input.shape;
+        out_shape.push_back(dim_model);
+        output.reshape(out_shape);
+
         /* Set value */
         for (int idx=0; idx<input.size( ); idx++)
         {
@@ -52,10 +57,6 @@ public:
                     std::sqrt(dim_model) + (*lut_pe)[idx*dim_model+ebd];
             }
         }
-
-        /* Set shape */
-        output.shape = input.shape;
-        output.shape.push_back(dim_model);
     }
 
 private:

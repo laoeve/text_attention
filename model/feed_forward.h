@@ -58,18 +58,17 @@ public:
     }
 
     void forward(const Tensor <T> &input, Tensor <T> &output, 
-            const Tensor<bool> &mask, const Tensor<T> &memory) override {
+            const Tensor<bool> &/*mask*/, const Tensor<T> &memory) override 
+    {
         std::cout << "FFNN.Forward" << std::endl;
-        Tensor<T> tmp1{};
-        linear_h->forward(input, tmp1);
-        std::cout << tmp1 << std::endl;
-        Tensor<T> tmp2{};
-        tmp2.shape.insert(tmp2.shape.end(), tmp1.shape.begin(), tmp1.shape.end());
-        for (auto item: tmp1) {
-            tmp2.push_back(GELU(item));
-        }
-        linear_o->forward(tmp2, output);
-        std::cout<<output <<std::endl;
+
+        Tensor<T> h2out{};
+        linear_h->forward(input, h2out);
+
+        for (int i=0; i<h2out.size( ); i++)
+            h2out[i] = GELU(h2out[i]);
+
+        linear_o->forward(h2out, output);
     }
 
     uint64_t parameterCount() override {

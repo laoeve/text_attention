@@ -85,10 +85,9 @@ public:
     }
 
     void forward(const Tensor<T> &input, Tensor<T> &output, const Tensor<bool> &mask) {
-        Tensor<T> tmp{};
-        
-        residual_mh->forward(input, tmp, mask, *blank_mem);
-        residual_ff->forward(tmp, output, *blank_mask, *blank_mem);
+        Tensor<T> mh2ff{};
+        residual_mh->forward(input, mh2ff, mask, *blank_mem);
+        residual_ff->forward(mh2ff, output, *blank_mask, *blank_mem);
     }
 
 private:

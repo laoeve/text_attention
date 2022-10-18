@@ -107,13 +107,14 @@ public:
         delete residual_ff;
     }
 
-    void forward(const Tensor<T> &input, Tensor<T> &memory, 
-            Tensor<T> &output, Tensor<bool> &tgt_mask, Tensor<bool> &src_mask) {
-        Tensor<T> tmp1{};
-        Tensor<T> tmp2{};
-        residual_mmh->forward(input, tmp1, tgt_mask, *blank_mem);
-        residual_mh->forward(tmp1, tmp2, src_mask, memory);
-        residual_ff->forward(tmp2, output, *blank_mask, *blank_mem);
+    void forward(const Tensor<T> &input, Tensor<T> &output, 
+            const Tensor<T> &memory, const Tensor<bool> &tgt_mask, 
+            const Tensor<bool> &src_mask) {
+        Tensor<T> mmh2mh{ };
+        Tensor<T> mh2ff{ };
+        residual_mmh->forward(input, mmh2mh, tgt_mask, *blank_mem);
+        residual_mh->forward(mmh2mh, mh2ff, src_mask, memory);
+        residual_ff->forward(mh2ff, output, *blank_mask, *blank_mem);
     }
 
 private:

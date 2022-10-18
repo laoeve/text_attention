@@ -14,6 +14,13 @@ using namespace std;
 using namespace text_attention;
 typedef float data_t;
 
+void swap_tensor(Tensor<data_t>& swp_a, Tensor<data_t>& swp_b)
+{
+    Tensor<data_t> swp_tmp = swp_b;
+    swp_b = swp_a;
+    swp_a = swp_tmp;
+}
+
 int main(int argc, char* argv[]) {
     /* Model arguments */
     string path_shape_input = "../sentence/shape.input";

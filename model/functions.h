@@ -160,37 +160,6 @@ void tensor_print(Tensor <T> &input){
     }
 } */
 
-//XXX: DELETE
-template<typename T>
-void t_tran(Tensor <T> &input)
-{
-    int input_whole_size = 1;
-    for (auto i = 0; i < input.shape.size(); ++i) {
-        input_whole_size *= input.shape[i];
-    }
-    assert(input.size() == input_whole_size);
-
-    text_attention::Tensor<T> tmp(input_whole_size,0);
-    
-    for(int row = 0 ; row < input.shape[input.shape.size()-2] ; ++row){
-        for(int col = 0 ; col < input.shape[input.shape.size()-1] ; ++col){
-            tmp[row + col*(input.shape[input.shape.size()-2])] = input[(input.shape[input.shape.size()-1])*row + col];
-        }
-    }
-    tmp.shape.clear();
-    tmp.shape.insert(tmp.shape.end(), input.shape.begin(), input.shape.end());
-    std::cout << tmp << std::endl;
-    input.clear();
-    input.shape.clear();
-    
-    input.insert(input.end(), tmp.begin(), tmp.end());
-    input.shape.insert(input.shape.end(), tmp.shape.begin(), tmp.shape.end());
-    std::swap(input.shape[input.shape.size()-1], input.shape[input.shape.size()-2]);
-
-    tmp.clear();
-    tmp.shape.clear();
-}
-
 std::map<int, std::string> vocab_parsing(std::string filename) 
 {
     std::cout << "!Vocabulary Parsing : " << filename << "!" << std::endl;

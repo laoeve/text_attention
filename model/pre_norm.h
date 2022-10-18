@@ -43,13 +43,13 @@ public:
 
     void forward(const Tensor <T> &input, Tensor <T> &output, 
             const Tensor<bool> &mask, const Tensor<T> &memory) override {
-        Tensor<T> tmp{};
-        layerNorm->forward(input, tmp);
-        fn->forward(tmp, output, mask, memory);
+        Tensor<T> fn2ln{};
+        fn->forward(input, fn2ln, mask, memory);
+        layerNorm->forward(fn2ln, output);
     }
 
 private:
-    Layer <T> *fn = nullptr;
+    Layer <T> *fn = nullptr; // can be either multihead attention or feedforward
     LayerNorm <T> *layerNorm = nullptr;
 };
 }

@@ -109,6 +109,14 @@ public:
                 ff_hidden_str, ff_out_str, 
                 LN_dec_mmh_str, LN_dec_mh_str, LN_dec_ff_str);
 
+        vector<T>* gamma = new vector<T>(param_map[prefix_enc+"."+LN_gamma_str].pvals);
+        vector<T>* beta = new vector<T>(param_map[prefix_enc+"."+LN_beta_str].pvals);
+        ln_encoder = new LayerNorm<T>(prefix_enc, dim_embed, *gamma, *beta);
+
+        gamma = new vector<T>(param_map[prefix_dec+"."+LN_gamma_str].pvals);
+        beta = new vector<T>(param_map[prefix_dec+"."+LN_beta_str].pvals);
+        ln_decoder = new LayerNorm<T>(prefix_dec, dim_embed, *gamma, *beta);
+
         /* Init generator layer */
         Tensor<T>* gen_w = new Tensor<T>(
                 param_map[gen_str+"."+weight_str].pvals,
@@ -125,7 +133,8 @@ public:
 
     void forward(const Tensor<T> &input, Tensor<T> &output) override 
     {
-        Tensor<T> memory{};
+        Tensor<T> enc_out_inter{};  // intermediate output tensor from encoder
+        Tensor<T> enc_out_fin{};    // final output tensor from encoder LN
         Tensor<T> input_embed{};
 
         /* Setup encoder mask */
@@ -134,25 +143,28 @@ public:
 
         /* Encoder forward */
         embed_src->forward(input, input_embed);
-        encoder->forward(input_embed, memory, src_mask);
+        encoder->forward(input_embed, enc_out_inter, src_mask);
+        ln_encoder->forward(enc_out_inter, enc_out_fin);
 
         /* Decoder part operation word-by-word */
         Tensor<T> tgt_input(vector<int>{1, 1});
         Tensor<bool> tgt_mask{};
         for (int i=0; i<max_len; i++)
         {
-            /* Target mask */
+            /* Setup target mask */
             TopModel<T>::set_dec_mask(tgt_input, tgt_mask);
 
             /* Decoder forward */
             Tensor<T> tgt_embed{ };
-            Tensor<T> dec_out{ };
+            Tensor<T> dec_out_inter{ }; // intermediate output tensor from decoder
+            Tensor<T> dec_out_fin{ };   // final output tensor from decoder LN
             embed_tgt->forward(tgt_input, tgt_embed);
-            decoder->forward(tgt_embed, dec_out, memory, tgt_mask, src_mask);
+            decoder->forward(tgt_embed, dec_out_inter, enc_out_fin, tgt_mask, src_mask);
+            ln_decoder->forward(dec_out_inter, dec_out_fin);
 
             /* Output preparation */
-            int gen_len = dec_out.shape[dec_out.shape.size( )-1];
-            Tensor<T> gen_in(vector<int>{1, gen_len}, dec_out.end( )-gen_len, dec_out.end( ));
+            int gen_len = dec_out_fin.shape[dec_out_fin.shape.size( )-1];
+            Tensor<T> gen_in(vector<int>{1, gen_len}, dec_out_fin.end( )-gen_len, dec_out_fin.end( ));
 
             /* Generator and softmax */
             Tensor<T> gen_out{ };
@@ -184,6 +196,8 @@ private:
     Embedding<T>* embed_tgt = nullptr;
     Encoder<T> *encoder = nullptr;
     Decoder<T> *decoder = nullptr;
+    LayerNorm<T>* ln_encoder = nullptr;
+    LayerNorm<T>* ln_decoder = nullptr;
     Linear<T> *generator = nullptr;
     SoftMax<T> softMax;
 };

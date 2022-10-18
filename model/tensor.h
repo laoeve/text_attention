@@ -17,6 +17,11 @@ public:
     {
     }
 
+    Tensor(const Tensor<T>& in_tensor)
+    {
+        *this = in_tensor;
+    }
+
     Tensor(std::vector<T>& values, std::vector<int>& shape) 
     {
         this->insert(this->end( ), values.begin( ), values.end( ));
@@ -43,7 +48,22 @@ public:
         }
         else
             this->assign(firstIt, lastIt);
-   }
+    }
+
+    Tensor(const std::vector<int> shape_) : shape(shape_)
+    {
+        uint64_t mult = 1;
+        for (int i=0; i<shape.size( );i++)
+            mult *= shape[i];
+        this->resize(mult);
+    }
+
+    Tensor(int size, T default_data) : std::vector<T>(size, default_data) 
+    {
+        shape.clear();
+        shape.push_back(size);
+    }
+
     void reshape(const std::vector<int> shape_,
             typename std::vector<T>::iterator firstIt, 
             typename std::vector<T>::iterator lastIt) 
@@ -63,20 +83,6 @@ public:
         }
         else
             this->assign(firstIt, lastIt);
-   }
-
-    Tensor(const std::vector<int> shape_) : shape(shape_)
-    {
-        uint64_t mult = 1;
-        for (int i=0; i<shape.size( );i++)
-            mult *= shape[i];
-        this->resize(mult);
-    }
-
-    Tensor(int size, T default_data) : std::vector<T>(size, default_data) 
-    {
-        shape.clear();
-        shape.push_back(size);
     }
 
     void reshape(const std::vector<int> new_shape)
@@ -156,7 +162,14 @@ public:
             cnt *= vec.shape[i];
         }
         os << "] ";
-        assert(cnt == vec.size());
+
+        if (cnt!=vec.size( ))
+        {
+            std::cerr << "Error: shape size does not match "
+                << "the number of elements" << std::endl; 
+            assert(0);
+            exit(1);
+        }
 
         os << "[";
         for (int i=0; i<vec.size( ); i++)
