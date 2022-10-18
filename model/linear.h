@@ -20,6 +20,12 @@ public:
     {
         weights = &param_weights;
         bias = &param_bias;
+
+        if (weights->shape[0]==out_feature && 
+                weights->shape[1]==in_feature)
+            need_wtranspose = true;
+        else
+            need_wtranspose = false;
     }
 
     uint64_t parameterCount() override {
@@ -47,6 +53,11 @@ public:
             exit(1);
         }
 
+        /* Transpose */
+        if (need_wtranspose)
+            weights->transpose( );
+
+        /* Multiplication */
         multiply(input, output);
     }
 
@@ -116,7 +127,9 @@ private:
     Tensor<T> *weights = nullptr; 
     Tensor<T> *bias = nullptr;
     std::string name;
-    int in_feature, out_feature;
+    int in_feature;
+    int out_feature;
+    bool need_wtranspose;
 };
 }
 #endif //ATTENTION_TRANSFORMER_CPP_LINEAR_H
