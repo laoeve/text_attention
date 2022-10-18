@@ -158,10 +158,10 @@ public:
         os << "] ";
         assert(cnt == vec.size());
 
-//        os << "[";
-//        for (int i=0; i<vec.size( ); i++)
-//            os << vec[i] << " ";
-//        os << "]";
+        os << "[";
+        for (int i=0; i<vec.size( ); i++)
+            os << vec[i] << " ";
+        os << "]";
 
         return os;
     }

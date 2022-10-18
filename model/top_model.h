@@ -39,18 +39,14 @@ public:
     {
         vector<int> mask_shape{(int)input.size( ), (int)input.size( )};
         mask.reshape(mask_shape);
-        mask.clear( ); // TODO: unsafe usage -> FIXME
-        for (int i=1; i<input.size( ); i++)
+        for (int i=0; i<input.size( ); i++)
         {
-            if (i==1) continue;
-
-            for (int mask_sz=0; mask_sz<i; mask_sz++)
+            for (int j=0; j<input.size( ); j++)
             {
-                vector<bool> mask_front(mask_sz, true);
-                vector<bool> mask_back(i-mask_sz-1, false);
-                mask_front.insert(mask_front.end( ), 
-                        mask_back.begin( ), mask_back.end( ));
-                mask.insert(mask.end( ), mask_front.begin( ), mask_front.end( ));
+                if (i>=j)
+                    mask[i*input.size( )+j] = true;
+                else
+                    mask[i*input.size( )+j] = false;
             }
         }
     }

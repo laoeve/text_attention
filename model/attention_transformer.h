@@ -153,7 +153,7 @@ public:
             /* Output preparation */
             int gen_len = dec_out.shape[dec_out.shape.size( )-1];
             Tensor<T> gen_in(vector<int>{1, gen_len}, dec_out.end( )-gen_len, dec_out.end( ));
-            
+
             /* Generator and softmax */
             Tensor<T> gen_out{ };
             Tensor<T> sm_out{ };
@@ -166,8 +166,8 @@ public:
             std::cout << "next word: " << max_index << std::endl;
 
             /* Concatenation */
-            tgt_input.push_back(max_index);
-            tgt_input.shape = {1,tgt_input.shape[1] + 1};
+            tgt_input.reshape(vector<int>{1, tgt_input.shape[1]+1});
+            tgt_input[tgt_input.shape[1]-1] = max_index;
         }
     }
 
