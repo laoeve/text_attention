@@ -37,7 +37,7 @@ public:
 
     void set_dec_mask(const Tensor<T>& input, Tensor<bool>& mask)
     {
-        vector<int> mask_shape{(int)input.size( ), (int)input.size( )};
+        vector<int> mask_shape{1, (int)input.size( ), (int)input.size( )};
         mask.reshape(mask_shape);
         for (int i=0; i<input.size( ); i++)
         {
