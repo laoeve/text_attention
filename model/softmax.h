@@ -13,16 +13,16 @@ template<typename T>
 class SoftMax : virtual public Layer<T> {
 public:
     void forward(const Tensor <T> &input, Tensor <T> &output) override {
-        int dim = input.shape.back();
+        int dim = input.shape[input.shape.size()-1];
         output.clear();
-        output.shape = input.shape;
+        output.reshape(input.shape);
         for (int i = 0; i < input.size(); i += dim) {
             T sum = 0;
             for (int j = 0; j < dim; ++j) {
                 sum += exp(input[i + j]);
             }
             for (int j = 0; j < dim; ++j) {
-                output.push_back(exp(input[i + j]) / sum);
+                output[i+j] = (exp(input[i + j]) / sum);
             }
         }
     }

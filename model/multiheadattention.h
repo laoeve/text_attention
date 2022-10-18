@@ -65,47 +65,39 @@ public:
         for (int h=0; h<heads; h++)
         {
             /* Weight division */
-            Tensor<T>* tmp_Wq = new Tensor<T>{};
-            Tensor<T>* tmp_Wk = new Tensor<T>{};
-            Tensor<T>* tmp_Wv = new Tensor<T>{};
+            Tensor<T>* tmp_Wq = new Tensor<T>(vector<int>{512,64});
+            Tensor<T>* tmp_Wk = new Tensor<T>(vector<int>{512,64});
+            Tensor<T>* tmp_Wv = new Tensor<T>(vector<int>{512,64});
 
             for (int line=0; line<dim_model; line++)
             {
                 for (int d_k=0; d_k<headDim; d_k++)
                 {
                     sanity_cntr++;
-                    tmp_Wq->push_back(in_Wq[line*dim_model+h*headDim+d_k]);
-                    tmp_Wk->push_back(in_Wk[line*dim_model+h*headDim+d_k]);
-                    tmp_Wv->push_back(in_Wv[line*dim_model+h*headDim+d_k]);
+                    tmp_Wq[line*dim_model+d_k] = in_Wq[line*dim_model+h*headDim+d_k];
+                    tmp_Wk[line*dim_model+d_k] = in_Wk[line*dim_model+h*headDim+d_k];
+                    tmp_Wv[line*dim_model+d_k] = in_Wv[line*dim_model+h*headDim+d_k];
                 }
             }
             assert(sanity_cntr==dim_model * headDim);
-
-            tmp_Wq->shape = {dim_model, headDim};
-            tmp_Wk->shape = {dim_model, headDim};
-            tmp_Wv->shape = {dim_model, headDim};
 
             w_q.push_back(tmp_Wq);
             w_k.push_back(tmp_Wk);
             w_v.push_back(tmp_Wv);
 
             /* Bias division */
-            Tensor<T>* tmp_Bq = new Tensor<T>{};
-            Tensor<T>* tmp_Bk = new Tensor<T>{};
-            Tensor<T>* tmp_Bv = new Tensor<T>{};
+            Tensor<T>* tmp_Bq = new Tensor<T>(vector<int>{64});
+            Tensor<T>* tmp_Bk = new Tensor<T>(vector<int>{64});
+            Tensor<T>* tmp_Bv = new Tensor<T>(vector<int>{64});
 
             sanity_cntr =0;
             for(int d_k = 0; d_k < headDim; ++d_k){
                 sanity_cntr++;
-                tmp_Bq->push_back(in_Bq[h*headDim+d_k]);
-                tmp_Bk->push_back(in_Bq[h*headDim+d_k]);
-                tmp_Bv->push_back(in_Bq[h*headDim+d_k]);
+                tmp_Bq[d_k] = in_Bq[h*headDim+d_k];
+                tmp_Bk[d_k] = in_Bq[h*headDim+d_k];
+                tmp_Bv[d_k] = in_Bq[h*headDim+d_k];
             }
             assert(sanity_cntr==headDim);
-
-            tmp_Bq->shape = {headDim};
-            tmp_Bk->shape = {headDim};
-            tmp_Bv->shape = {headDim};
 
             b_q.push_back(tmp_Bq);
             b_k.push_back(tmp_Bk);
@@ -145,142 +137,146 @@ public:
             const Tensor<bool> &mask, const Tensor<T> &memory) override 
     {
         std::cout << "MultiheadAttention.Forward" << std::endl;
-        //int dim_k = this->dim_model / this->heads;
         Tensor<T> tmp1{};
-
+        tmp1 = input;
+        
+        // 1) Linear FC Layer Projection
         // lin(x) for lin, x in zip(self.linears, (query, key, value))
-        tmp1.insert(tmp1.end(), input.begin(), input.end());
-        tmp1.shape.insert(tmp1.shape.end(), input.shape.begin(), input.shape.end());    //{1,128,512}
-        std::cout << tmp1 << std::endl;
 
-        if(memory.is_void( )==false){
-            for(auto item : (this->qLinear)){
-                auto *q_tmp = new Tensor<T>{};
-                item->forward(memory, *q_tmp);
-                q.push_back(q_tmp);
-            }
-            for(auto item : (this->kLinear)){
-                auto *k_tmp = new Tensor<T>{};
-                item->forward(memory, *k_tmp);
-                k.push_back(k_tmp);
-            }
-            for(auto item : (this->vLinear)){
-                auto *v_tmp = new Tensor<T>{};
-                item->forward(tmp1, *v_tmp);
-                v.push_back(v_tmp);
-            }
-        } else {
-            for(auto item : (this->qLinear)){
-                auto *q_tmp = new Tensor<T>{};
+        if(memory.is_void( )==false)
+        {
+            for(auto item : (this->qLinear))
+            {
+                Tensor<T>* q_tmp = new Tensor<T>{};
                 item->forward(tmp1, *q_tmp);
-                q.push_back(q_tmp);
+                q_fcm.push_back(q_tmp);
             }
-            for(auto item : (this->kLinear)){
-                auto *k_tmp = new Tensor<T>{};
-                item->forward(tmp1, *k_tmp);
-                k.push_back(k_tmp);
+            for(auto item : (this->kLinear))
+            {
+                Tensor<T>* k_tmp = new Tensor<T>{};
+                item->forward(memory, *k_tmp);
+                k_fcm.push_back(k_tmp);
             }
-            for(auto item : (this->vLinear)){
-                auto *v_tmp = new Tensor<T>{};
-                item->forward(tmp1, *v_tmp);
-                v.push_back(v_tmp);
+            for(auto item : (this->vLinear))
+            {
+                Tensor<T>* v_tmp = new Tensor<T>{};
+                item->forward(memory, *v_tmp);
+                v_fcm.push_back(v_tmp);
             }
         }
-        tmp1.clear();
-        tmp1.shape.clear();
+        else
+        {
+            for(auto item : (this->qLinear))
+            {
+                Tensor<T>* q_tmp = new Tensor<T>{};
+                item->forward(tmp1, *q_tmp);
+                q_fcm.push_back(q_tmp);
+            }
+            for(auto item : (this->kLinear))
+            {
+                Tensor<T>* k_tmp = new Tensor<T>{};
+                item->forward(tmp1, *k_tmp);
+                k_fcm.push_back(k_tmp);
+            }
+            for(auto item : (this->vLinear))
+            {
+                Tensor<T>* v_tmp = new Tensor<T>{};
+                item->forward(tmp1, *v_tmp);
+                v_fcm.push_back(v_tmp);
+            }
+        }
 
-        Tensor<T> dots{};
+        int word_num = q_fcm[0]->shape[q_fcm[0]->shape.size() - 2];
+        int d_k = q_fcm[0]->shape[q_fcm[0]->shape.size() - 1];
+
+        Tensor<T> dots(vector<int> {1,word_num,word_num});
         Tensor<T> tmp2{};
-        Tensor<T> tmp3{};
+        Tensor<T> tmp3(vector<int> {1,word_num,word_num});
+        Tensor<T> tmp4{};
+        Tensor<T> attn{};
+
+        std::vector<int> out_shape = tmp2.shape;
+        out_shape.shape[out_shape.shape.size() -1] = tmp2.shape[tmp2.shape.size() -1] * heads;
+        tmp3.reshape(out_shape);    // {1, word_num, dim_model}
 
         // 2) scale dot attention
         // matmul(q, k^t)
-        for (int h = 0; h < heads; ++h) {
-            int num = q[h]->shape[q[h]->shape.size() - 2];    // 128    len_word
-            int d_k = q[h]->shape[q[h]->shape.size() - 1];    // 64     d_embed == d_k
-            for (int pi = 0; pi < num; ++pi) {
-                for (int pj = 0; pj < num; ++pj) {
+        for (int h = 0; h < heads; ++h)
+        {
+            for (int pi = 0; pi < word_num; ++pi)
+            {
+                for (int pj = 0; pj < word_num; ++pj)
+                {
                     T val = 0;
-                    for (int pk = 0; pk < d_k; ++pk) {
-                        val += (*q[h])[pi * d_k + pk] * (*k[h])[pj * d_k + pk] * scale; /* added scale product */
+                    for (int pk = 0; pk < d_k; ++pk)
+                    {
+                        val += (*q_fcm[h])[pi * d_k + pk]
+                         * (*k_fcm[h])[pj * d_k + pk]
+                         * scale;
                     }
-                    dots.push_back(val);
+                    dots[pi*word_num + pj] = val;
                 }
             }
-            dots.shape.clear();
-            dots.shape.insert(dots.shape.begin(), k[h]->shape.begin(), k[h]->shape.end());   // {1,128,64}
-            dots.shape[dots.shape.size() - 1] = (*k[h]).shape[(*k[h]).shape.size() - 2];  //  scores{1,128,128}
-/* 
-            std::cout << "dots shape : " << dots.shape[0] << " " << dots.shape[1] << " " << dots.shape[2] << std::endl;
-            std::cout << "mask shape : " << mask.shape[0] << " " << mask.shape[1] << " " << mask.shape[2] << std::endl;
-            std::cout << "verify dots Tensor : " << dots << std::endl;
-*/
-            if (mask.is_void( )==false) {
-                if(mask.shape[mask.shape.size()-1] == mask.shape[mask.shape.size()-2]){     //condition : src_mask {num * 128}
-                    for (int p = 0; p < mask.shape[1]; ++p) {   // count num
-                        for (int j = 0; j < mask.shape[2]; ++j){   //count 128
-                            if(mask[j] == false){
+
+            if (mask.is_void( )==false)
+            {
+                if(mask.shape[mask.shape.size()-1] == mask.shape[mask.shape.size()-2])
+                {   //condition : src_mask {1 * num}
+                    for (int p = 0; p < mask.shape[1]; ++p)
+                    {   
+                        for (int j = 0; j < mask.shape[2]; ++j)
+                        {
+                            if(mask[j] == false)
+                            {
                                 dots[mask.shape[2] * p + j] = -1e9;
                             }
                         }
                     }
-                } else {      //condition : tgt_mask {num * num}
-                    for (int p = 0; p < mask.shape[1]; ++p) {   // count num
-                        for (int j = 0; j < mask.shape[2]; ++j){   //count 128
-                            if(mask[mask.shape[2] * p + j] == false){
+                } else { //condition : tgt_mask {num * num}
+                    for (int p = 0; p < mask.shape[1]; ++p)
+                    {
+                        for (int j = 0; j < mask.shape[2]; ++j)
+                        {
+                            if(mask[mask.shape[2] * p + j] == false)
+                            {
                                 dots[mask.shape[2] * p + j] = -1e9;
                             }
                         }
-                    }                        
+                    }
                 }
             }
 
-            Tensor<T> attn{};
-            softMax.forward(dots, attn);    //softmax
-            dots.clear();
-            dots.shape.clear();
+            softMax.forward(dots, attn);
 
-            // matmul with v
-            tmp2.shape = q[h]->shape;   // {1,128,64}
-            for (int pi = 0; pi < attn.shape[1]; ++pi) {
-                for (int pj = 0; pj < v[h]->shape[1]; ++pj) {
+            /* matmul with v */
+            tmp2.reshape(q_fcm[h]->shape);   // {1,num,headDim}
+            for (int pi = 0; pi < attn.shape[1]; ++pi)
+            {
+                for (int pj = 0; pj < v_fcm[h]->shape[1]; ++pj)
+                {
                     T val2 = 0;
-                    for (int pk = 0; pk < attn.shape[2]; ++pk) {
+                    for (int pk = 0; pk < attn.shape[2]; ++pk)
+                    {
                         val2 += attn[pi * attn.shape[2] + pk] *
-                            (*v[h])[pk * v[h]->shape[2] + pj];
-
+                            (*v_fcm[h])[pk * v_fcm[h]->shape[2] + pj];
                     }
-                    tmp2.push_back(val2);
+                    tmp2[v_fcm[h]->shape[1]]=val2;
                 }
             }
-            attn.clear();
-            attn.shape.clear();
 
-            for(int cc_row = 0; cc_row < num; ++cc_row){      //concat matrix
-                tmp3.insert(tmp3.begin() + (h * (cc_row+1) * d_k),
-                // tmp3.insert(tmp3.begin() + (h * (cc_row+1) * d_k) + (cc_row * d_k),
-                tmp2.begin() + (cc_row * d_k), tmp2.begin() + ((cc_row+1) * d_k)); // tmp2 line by line
+            /* Concat Head matrix */
+            for(int cc_row = 0; cc_row < word_num; ++cc_row)
+            {    // num : len_word
+                for(int cc_col = 0; cc_col < d_k ; ++ cc_col)
+                {
+                    tmp3[dim_model*cc_row + h*d_k + cc_col] = tmp2[d_k*cc_row + cc_col]
+                }
             }
         }
 
-        tmp3.shape = tmp2.shape;    // {1,128,64}
-        tmp3.shape[2] = tmp3.shape[2] * heads ; // {1, 128,512}
-        std::cout << tmp3 << std::endl;
-        tmp2.clear();
-        tmp2.shape.clear();
-
         // 3) final linear
-        Tensor<T> tmp4{};
         outLinear->forward(tmp3, tmp4);
-        tmp3.clear();
-        tmp3.shape.clear();
-    
-        output.clear();
-        output.shape.clear();
-        output.insert(output.end(), tmp4.begin(), tmp4.end());
-        output.shape.insert(output.shape.end(), tmp4.shape.begin(), tmp4.shape.end());
-        tmp4.clear();
-        tmp4.shape.clear();
+        output = tmp4;
     }
 
     ~MultiheadAttention() 
@@ -308,9 +304,9 @@ private:
     std::vector<Linear<T> *>kLinear;
     std::vector<Linear<T> *>vLinear;
 
-    std::vector<Tensor<T> *>q;
-    std::vector<Tensor<T> *>k;
-    std::vector<Tensor<T> *>v;
+    std::vector<Tensor<T> *>q_fcm; //fully connected matrix
+    std::vector<Tensor<T> *>k_fcm;
+    std::vector<Tensor<T> *>v_fcm;
 
     Linear<T> *outLinear = nullptr;
     SoftMax<T> softMax;
