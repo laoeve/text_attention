@@ -123,43 +123,6 @@ public:
         generator->print_params( );
     }
 
-    void set_enc_mask(const Tensor<T>& input, Tensor<bool>& mask) 
-    {
-        assert(input.shape.size( )==2);
-        int num_words = input.shape[1];
-        for (int i=0; i<input.shape[0]; i++)
-        {
-            for (int j=0; j<input.shape[1]; j++)
-            {
-                if (input[i*num_words+j]==2)
-                    mask.push_back(false);
-                else
-                    mask.push_back(true);
-            }
-        }
-        mask.shape = {1, input.shape[0], input.shape[1]};
-    }
-
-    void set_dec_mask(const Tensor<T>& input, Tensor<bool>& mask)
-    {
-        vector<int> mask_shape{input.size( ), input.size( )};
-        mask.reshape(mask_shape);
-        mask.clear( ); // TODO: unsafe usage -> FIXME
-        for (int i=1; i<input.size( ); i++)
-        {
-            if (i==1) continue;
-
-            for (int mask_sz=0; mask_sz<i; mask_sz++)
-            {
-                vector<bool> mask_front(mask_sz, true);
-                vector<bool> mask_back(i-mask_sz-1, false);
-                mask_front.insert(mask_front.end( ), 
-                        mask_back.begin( ), mask_back.end( ));
-                mask.insert(mask.end( ), mask_front.begin( ), mask_front.end( ));
-            }
-        }
-    }
-
     void forward(const Tensor<T> &input, Tensor<T> &output) override 
     {
         Tensor<T> memory{};
@@ -167,7 +130,7 @@ public:
 
         /* Setup encoder mask */
         Tensor<bool> src_mask{};
-        set_enc_mask(input, src_mask);
+        TopModel<T>::set_enc_mask(input, src_mask);
 
         /* Encoder forward */
         embed_src->forward(input, input_embed);
@@ -179,7 +142,7 @@ public:
         for (int i=0; i<max_len; i++)
         {
             /* Target mask */
-            set_dec_mask(tgt_input, tgt_mask);
+            TopModel<T>::set_dec_mask(tgt_input, tgt_mask);
 
             /* Decoder forward */
             Tensor<T> tgt_embed{ };
@@ -189,9 +152,7 @@ public:
 
             /* Output preparation */
             int gen_len = dec_out.shape[dec_out.shape.size( )-1];
-            Tensor<T> gen_in{};
-            gen_in.reshape(vector<int>{1, gen_len});
-            gen_in.assign(dec_out.end( )-gen_len, dec_out.end( ));
+            Tensor<T> gen_in(vector<int>{1, gen_len}, dec_out.end( )-gen_len, dec_out.end( ));
             
             /* Generator and softmax */
             Tensor<T> gen_out{ };

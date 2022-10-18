@@ -24,10 +24,9 @@ public:
         std::fill(this->begin( ), this->end( ), 0);
     }
 
-    Tensor(
+    Tensor(const std::vector<int> shape_,
             typename std::vector<T>::iterator firstIt, 
-            typename std::vector<T>::iterator lastIt, 
-            const std::vector<int> shape_) 
+            typename std::vector<T>::iterator lastIt)
     : shape(shape_)
     {
         uint64_t mult = 1;
@@ -45,10 +44,9 @@ public:
         else
             this->assign(firstIt, lastIt);
    }
-    void reshape(
+    void reshape(const std::vector<int> shape_,
             typename std::vector<T>::iterator firstIt, 
-            typename std::vector<T>::iterator lastIt, 
-            const std::vector<int> shape_) 
+            typename std::vector<T>::iterator lastIt) 
     {
         shape = shape_;
         uint64_t mult = 1;
@@ -160,10 +158,10 @@ public:
         os << "] ";
         assert(cnt == vec.size());
 
-        os << "[";
-        for (int i=0; i<vec.size( ); i++)
-            os << vec[i] << " ";
-        os << "]";
+//        os << "[";
+//        for (int i=0; i<vec.size( ); i++)
+//            os << vec[i] << " ";
+//        os << "]";
 
         return os;
     }
