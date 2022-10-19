@@ -158,7 +158,9 @@ public:
         std::cout << "enc-out-fin " << enc_out_fin << std::endl;
 
         /* Decoder part operation word-by-word */
-        Tensor<T> tgt_input(vector<int>{1, 1});
+//        Tensor<T> tgt_input(vector<int>{input.shape[0], 1});
+        Tensor<T> tgt_input(input.shape);
+        tgt_input[0] = 1;
         Tensor<bool> tgt_mask{};
         for (int i=0; i<max_len; i++)
         {
@@ -173,9 +175,13 @@ public:
             Tensor<T> dec_out_inter{ }; // intermediate output tensor from decoder
             Tensor<T> dec_out_fin{ };   // final output tensor from decoder LN
             embed_tgt->forward(tgt_input, tgt_embed);
+            std::cout << "tgt_embed " << tgt_embed << std::endl;
             decoder->forward(tgt_embed, dec_out_inter, enc_out_fin, tgt_mask, src_mask);
+            std::cout << "dec_out_inter " << dec_out_inter << std::endl;
             ln_decoder->forward(dec_out_inter, dec_out_fin);
+            std::cout << "dec_out_fin " << dec_out_fin << std::endl;
 
+            assert(0);
 //            /* Output preparation */
 //            int gen_len = dec_out_fin.shape[dec_out_fin.get_dims( )-1];
 //            Tensor<T> gen_in(vector<int>{1, gen_len}, 

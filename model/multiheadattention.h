@@ -150,7 +150,9 @@ public:
         {
             /* Extract a single input for 2D calculation */
             Tensor<T> single_input{ };
+            Tensor<T> single_memory{ };
             split_batch_layer(single_input, input, n);
+            split_batch_layer(single_memory, memory, n);
 
             for (int h=0; h<num_heads; h++)
             {
@@ -158,7 +160,7 @@ public:
                 Tensor<T> mat_Q{};
                 Tensor<T> mat_K{};
                 Tensor<T> mat_V{};
-                get_QKV(mat_Q, mat_K, mat_V, single_input, memory, h);
+                get_QKV(mat_Q, mat_K, mat_V, single_input, single_memory, h);
 
                 /* Attention score (S=Q * K_t * scale) */
                 Tensor<T> att_score{};
@@ -205,6 +207,9 @@ private:
     void split_batch_layer(Tensor<T>& single_input, 
             const Tensor<T>& input, const int input_idx)
     {
+        if (input.is_void( ))
+            return;
+
         int num_row = input.shape[1];
         int num_col = input.shape[2];
 
@@ -263,7 +268,7 @@ private:
                     mask.shape[1]!=mask.shape[2])
                 {
                     std::cerr << "Error: dimension error while getting"
-                        << "masked (from target) results" << std::endl;
+                        << " masked (from target) results" << std::endl;
                     assert(0);
                     exit(1);
                 }
@@ -289,7 +294,7 @@ private:
                     att_score.shape[0]!=att_score.shape[1])
                 {
                     std::cerr << "Error: dimension error while getting"
-                        << "masked (from source) result" << std::endl;
+                        << " masked (from source) result" << std::endl;
                     assert(0);
                     exit(1);
                 }

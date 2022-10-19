@@ -40,7 +40,6 @@ public:
             << " positionalEncoding.shape=" << *lut_pe << std::endl;
     }
 
-    //TODO: is batch considered?
     void forward(const Tensor<T>& input, Tensor<T>& output) override
     {
         /* Set shape */
@@ -49,13 +48,18 @@ public:
         output.reshape(out_shape);
 
         /* Set value */
-        for (int idx=0; idx<input.size( ); idx++)
+        int num_input = output.shape[0];
+        int len = output.shape[1];
+        for (int n=0; n<num_input; n++)
         {
-            for (int ebd=0; ebd<dim_model; ebd++)
+            for (int idx=0; idx<len; idx++)
             {
-                output[idx*dim_model+ebd] = 
-                    (*lut_em)[input[idx]*dim_model+ebd] *
-                    std::sqrt(dim_model) + (*lut_pe)[idx*dim_model+ebd];
+                for (int ebd=0; ebd<dim_model; ebd++)
+                {
+                    output[n*len*dim_model+idx*dim_model+ebd] = 
+                        (*lut_em)[input[n*len+idx]*dim_model+ebd] *
+                        std::sqrt(dim_model) + (*lut_pe)[idx*dim_model+ebd];
+                }
             }
         }
     }

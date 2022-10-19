@@ -31,12 +31,20 @@ public:
     void matmul(Tensor<T>& out, const Tensor<T>& opa, 
             const Tensor<T>& opb, const T scale_factor)
     {
-        assert(opa.shape[1]==opb.shape[0]);
+        if ((opa.get_dims( )==1 && opb.get_dims( )==1 && opb.shape[0]!=1) ||
+            (opa.get_dims( )==2 && opa.shape[1]!=opb.shape[0]))
+        {
+            std::cerr << "Error: dimension error at "
+                << "matrix multiplication" << std::endl;
+            std::cerr << opa.get_dims( ) << " " << opb.get_dims( ) << " " << opa << " " << opb << std::endl;
+            assert(0);
+            exit(1);
+        }
         
         /* Determine output shapes */
         int num_row = opa.shape[0];
-        int num_col = opb.shape[1];
-        int num_col_opa = opa.shape[1];
+        int num_col = (opb.get_dims( )==1)? 1 : opb.shape[1];
+        int num_col_opa = (opa.get_dims( )==1)? 1 : opa.shape[1];
         vector<int> out_shape{num_row, num_col};
         out.reshape(out_shape);
 
