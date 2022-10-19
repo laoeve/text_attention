@@ -56,7 +56,7 @@ public:
     }
 
 private:
-    //TODO: optimize in future as another function if possible
+    //TODO: optimize in future if possible
     void multiply(const Tensor<T>& input, Tensor<T>& output)
     {
         /* Determine shapes of operators */
@@ -92,8 +92,8 @@ private:
                     for (int k=0; k<in_feature; k++)
                     {
                         output[n*sz_outstack+i*out_feature+j] +=
-                            (*weights)[k*out_feature+j]*
-                            input[n*sz_instack+i*in_feature+k];
+                            input[n*sz_instack+i*in_feature+k]*
+                            (*weights)[k*out_feature+j];
                     }
                 }
             }

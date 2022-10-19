@@ -27,7 +27,7 @@ public:
             const string weight_str, const string bias_str, 
             const string sa_query_str, const string sa_key_str,
             const string sa_value_str, const string sa_out_str)
-    : Layer<T>(master), dim_model(dim_model), scale(1/sqrt(dim_model/num_heads)),
+    : Layer<T>(master), dim_model(dim_model), scale(1./sqrt(dim_model/num_heads)),
       num_heads(num_heads), headDim(dim_model/num_heads)
     {
         std::cout << ">>>> Init multihead sublayer - " << std::endl;
@@ -158,9 +158,9 @@ public:
                 Tensor<T> mat_Q{};
                 Tensor<T> mat_K{};
                 Tensor<T> mat_V{};
-                get_QKV(mat_Q, mat_K, mat_V, input, memory);
+                get_QKV(mat_Q, mat_K, mat_V, input, memory, h);
 
-                /* Attention score (S=Q * K_t / scale) */
+                /* Attention score (S=Q * K_t * scale) */
                 Tensor<T> att_score{};
                 get_attention_score(att_score, mat_Q, mat_K);
 
@@ -173,7 +173,7 @@ public:
                 get_attention_value(att_val, att_dist, mat_V);
                 
                 /* Concatenate multiple heads */
-                concat(mh2linear, att_val, n, h);
+                concat_attention(mh2linear, att_val, n, h);
             }
         }
 
@@ -203,23 +203,90 @@ public:
 
 private:
     void get_QKV(Tensor<T>& mat_Q, Tensor<T>& mat_K, Tensor<T>& mat_V,
-            const Tensor<T>& input, const Tensor<T>& memory)
+            const Tensor<T>& input, const Tensor<T>& memory, const int head_idx)
     {
+        /* Determine output shapes */
+        vector<int> out_shape{input.shape[1], headDim};
+        mat_Q.reshape(out_shape);
+        mat_K.reshape(out_shape);
+        mat_V.reshape(out_shape);
+
+        /* Calculate results of Q K V */
+        qLinear[head_idx]->forward(input, mat_Q);
+        if (memory.is_void( ))
+        {
+            kLinear[head_idx]->forward(input, mat_K);
+            vLinear[head_idx]->forward(input, mat_V);
+        }
+        else
+        {
+            kLinear[head_idx]->forward(memory, mat_K);
+            vLinear[head_idx]->forward(memory, mat_V);
+        }
     }
 
     void get_attention_score(Tensor<T>& att_score, 
-            const Tensor<T>& mat_Q, const Tensor<T>& mat_K)
+            const Tensor<T>& mat_Q, Tensor<T>& mat_K)
     {
+        /* Transpose K */
+        mat_K.transpose( );
+
+        /* Matrix multiplication */
+        assert(mat_Q.shape[1]==headDim);
+        matmul(att_score, mat_Q, mat_K);
     }
 
     void get_attention_value(Tensor<T>& att_val,
             const Tensor<T>& att_dist, const Tensor<T>& mat_V)
     {
+        matmul(att_val, att_dist, mat_V);
     }
 
-    void concat(Tensor<T>& out, const Tensor<T>& att_val, 
-            int input_idx, int head_idx)
+    void concat_attention(Tensor<T>& out, const Tensor<T>& att_val, 
+            const int input_idx, const int head_idx)
     {
+        assert(out.get_dims( )==3);
+
+        uint64_t sz_stack = out.shape[1]*out.shape[2];
+        uint64_t v_row = att_val.shape[0];
+        uint64_t v_col = att_val.shape[1];
+        uint64_t o_col = out.shape[2];
+        for (uint64_t v_i=0; v_i<v_row; v_i++)
+        {
+            for (uint64_t v_j=0; v_j<v_col; v_j++)
+            {
+                uint64_t o_j = head_idx*v_col+v_j;
+                out[input_idx*sz_stack+v_i*o_col+o_j] = att_val[v_i*v_col+v_j];
+            }
+        }
+    }
+
+    //TODO: optimize in future if possible
+    void matmul(Tensor<T>& out, const Tensor<T>& opa, const Tensor<T>& opb)
+    {
+        assert(opa.shape[1]==opb.shape[0]);
+        
+        /* Determine output shapes */
+        int num_row = opa.shape[0];
+        int num_col = opb.shape[1];
+        int num_col_opa = opa.shape[1];
+        vector<int> out_shape{num_row, num_col};
+        out.reshape(out_shape);
+
+        /* Matrix multiplication */
+        for (int i=0; i<num_row; i++)
+        {
+            for (int j=0; j<num_col; j++)
+            {
+                out[i*num_col+j] = 0;
+                for (int k=0;k<num_col_opa; k++)
+                {
+                    out[i*num_col+j] += 
+                        opa[i*num_col_opa+k]*opb[k*num_col+j];
+                }
+                out[i*num_col+j] *= scale;
+            }
+        }
     }
 
     bool is_operable(const Tensor<T>& op)
@@ -237,10 +304,6 @@ private:
     std::vector<Linear<T> *>qLinear;
     std::vector<Linear<T> *>kLinear;
     std::vector<Linear<T> *>vLinear;
-
-    std::vector<Tensor<T> *>q_fcm; //fully connected matrix
-    std::vector<Tensor<T> *>k_fcm;
-    std::vector<Tensor<T> *>v_fcm;
 
     Linear<T> *outLinear = nullptr;
     SoftMax<T> softMax;
