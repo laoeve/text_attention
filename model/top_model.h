@@ -20,9 +20,12 @@ public:
 
     void set_enc_mask(const Tensor<T>& input, Tensor<bool>& mask) 
     {
+        /*
+         * Dimension will be [SENTENCE NUM x SENTENCE LEN] 
+         */
         assert(input.shape.size( )==2);
         int num_words = input.shape[1];
-        mask.reshape(vector<int>{1, input.shape[0], input.shape[1]});
+        mask.reshape(vector<int>{input.shape[0], input.shape[1]});
         for (int i=0; i<input.shape[0]; i++)
         {
             for (int j=0; j<input.shape[1]; j++)
@@ -37,6 +40,10 @@ public:
 
     void set_dec_mask(const Tensor<T>& input, Tensor<bool>& mask)
     {
+        /* 
+         * Note: dimension of 3 is to distinguish source & target masks 
+         * Dimension will be [1 SENTENCE LEN SENTENCE LEN]
+         * */
         vector<int> mask_shape{1, (int)input.size( ), (int)input.size( )};
         mask.reshape(mask_shape);
         for (int i=0; i<input.size( ); i++)

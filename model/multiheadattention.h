@@ -16,6 +16,8 @@
 #include "linear.h"
 #include "softmax.h"
 
+#define MULTIHEAD_DBG
+
 using namespace std;
 
 namespace text_attention {
@@ -166,7 +168,7 @@ public:
 
                 /* Attention distribution (D=softmax[S]) */
                 Tensor<T> att_dist{};
-                softMax.forward(att_score, att_dist);
+                get_attention_dist(att_dist, att_score, mask, n);
 
                 /* Attention value matrix (A=D * V) */
                 Tensor<T> att_val{ };
@@ -234,6 +236,72 @@ private:
         /* Matrix multiplication */
         assert(mat_Q.shape[1]==headDim);
         Layer<T>::matmul(att_score, mat_Q, mat_K, scale);
+    }
+
+    void get_attention_dist(Tensor<T>& att_dist, Tensor<T>& att_score, 
+            const Tensor<bool>& mask, const int input_idx)
+    {
+        /* Mask out values */
+        if (mask.is_void( )==false)
+        {
+            if (mask.get_dims( )==3)
+            {
+                /* Target mask */
+#ifdef MULTIHEAD_DBG
+                assert(mask.shape[0]==1);
+                if (att_score.shape[0]!=mask.shape[1] ||
+                    att_score.shape[1]!=mask.shape[2] ||
+                    mask.shape[1]!=mask.shape[2])
+                {
+                    std::cerr << "Error: dimension error while getting"
+                        << "masked (from target) results" << std::endl;
+                    assert(0);
+                    exit(1);
+                }
+#endif
+
+                uint64_t len = att_score.shape[0];
+                for (int i=0; i<len; i++)
+                {
+                    for (int j=0; j<len; j++)
+                    {
+                        if (mask[i*len+j])
+                            continue;
+                        att_score[i*len+j] = -1e9;
+                    } 
+                }
+            }
+            else
+            {
+                /* Source mask */
+#ifdef MULTIHEAD_DBG
+                if (mask.get_dims( )!=2 ||
+                    mask.shape[1]!=att_score.shape[0] ||
+                    att_score.shape[0]!=att_score.shape[1])
+                {
+                    std::cerr << "Error: dimension error while getting"
+                        << "masked (from source) result" << std::endl;
+                    assert(0);
+                    exit(1);
+                }
+#endif
+
+                uint64_t len = att_score.shape[0];
+                for (int i=0; i<len; i++)
+                {
+                    for (int j=0; j<len; j++)
+                    {
+                        if (mask[input_idx*len+j])
+                            continue;
+
+                        att_score[i*len+j] = -1e9;
+                    }
+                }
+            }
+        }
+
+        /* Calculate distribution */
+        softMax.forward(att_score, att_dist);
     }
 
     void get_attention_value(Tensor<T>& att_val,

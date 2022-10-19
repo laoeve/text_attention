@@ -104,7 +104,7 @@ private:
         return true;
     }
 
-    T eps;
+    float eps;
     std::vector<T> *gamma = nullptr; 
     std::vector<T> *beta = nullptr; 
     std::string name;
