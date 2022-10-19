@@ -65,18 +65,18 @@ public:
         for (int h=0; h<num_heads; h++)
         {
             /* Weight division */
-            Tensor<T>* tmp_Wq = new Tensor<T>(vector<int>{512,64});
-            Tensor<T>* tmp_Wk = new Tensor<T>(vector<int>{512,64});
-            Tensor<T>* tmp_Wv = new Tensor<T>(vector<int>{512,64});
+            Tensor<T>* tmp_Wq = new Tensor<T>(vector<int>{dim_model,headDim});
+            Tensor<T>* tmp_Wk = new Tensor<T>(vector<int>{dim_model,headDim});
+            Tensor<T>* tmp_Wv = new Tensor<T>(vector<int>{dim_model,headDim});
 
             for (int line=0; line<dim_model; line++)
             {
                 for (int d_k=0; d_k<headDim; d_k++)
                 {
                     sanity_cntr++;
-                    tmp_Wq[line*dim_model+d_k] = in_Wq[line*dim_model+h*headDim+d_k];
-                    tmp_Wk[line*dim_model+d_k] = in_Wk[line*dim_model+h*headDim+d_k];
-                    tmp_Wv[line*dim_model+d_k] = in_Wv[line*dim_model+h*headDim+d_k];
+                    (*tmp_Wq)[line*dim_model+d_k] = in_Wq[line*dim_model+h*headDim+d_k];
+                    (*tmp_Wk)[line*dim_model+d_k] = in_Wk[line*dim_model+h*headDim+d_k];
+                    (*tmp_Wv)[line*dim_model+d_k] = in_Wv[line*dim_model+h*headDim+d_k];
                 }
             }
             assert(sanity_cntr==dim_model * headDim);
@@ -86,16 +86,16 @@ public:
             w_v.push_back(tmp_Wv);
 
             /* Bias division */
-            Tensor<T>* tmp_Bq = new Tensor<T>(vector<int>{64});
-            Tensor<T>* tmp_Bk = new Tensor<T>(vector<int>{64});
-            Tensor<T>* tmp_Bv = new Tensor<T>(vector<int>{64});
+            Tensor<T>* tmp_Bq = new Tensor<T>(vector<int>{headDim});
+            Tensor<T>* tmp_Bk = new Tensor<T>(vector<int>{headDim});
+            Tensor<T>* tmp_Bv = new Tensor<T>(vector<int>{headDim});
 
             sanity_cntr =0;
             for(int d_k = 0; d_k < headDim; ++d_k){
                 sanity_cntr++;
-                tmp_Bq[d_k] = in_Bq[h*headDim+d_k];
-                tmp_Bk[d_k] = in_Bq[h*headDim+d_k];
-                tmp_Bv[d_k] = in_Bq[h*headDim+d_k];
+                (*tmp_Bq)[d_k] = in_Bq[h*headDim+d_k];
+                (*tmp_Bk)[d_k] = in_Bq[h*headDim+d_k];
+                (*tmp_Bv)[d_k] = in_Bq[h*headDim+d_k];
             }
             assert(sanity_cntr==headDim);
 
@@ -138,7 +138,7 @@ public:
     {
        if (is_operable(input)==false)
         {
-            std::cerr << "Error: dimension error on " << name << std::endl;
+            std::cerr << "Error: dimension error on MultiHead layer " << std::endl;
             assert(0);
             exit(1);
         }
@@ -155,22 +155,22 @@ public:
             for (int h=0; h<num_heads; h++)
             {
                 /* Calculate matrices: Q, K, V */
-                Tensor<T> M_Q{};
-                Tensor<T> M_K{};
-                Tensor<T> M_V{};
+                Tensor<T> mat_Q{};
+                Tensor<T> mat_K{};
+                Tensor<T> mat_V{};
                 get_QKV(mat_Q, mat_K, mat_V, input, memory);
 
                 /* Attention score (S=Q * K_t / scale) */
                 Tensor<T> att_score{};
-                get_attention_score(att_score, M_Q, M_K);
+                get_attention_score(att_score, mat_Q, mat_K);
 
                 /* Attention distribution (D=softmax[S]) */
-                Tensore<T> att_dist{};
-                softmax.forward(att_score, att_dist);
+                Tensor<T> att_dist{};
+                softMax.forward(att_score, att_dist);
 
                 /* Attention value matrix (A=D * V) */
                 Tensor<T> att_val{ };
-                get_attention_value(att_val, att_dist, M_V);
+                get_attention_value(att_val, att_dist, mat_V);
                 
                 /* Concatenate multiple heads */
                 concat(mh2linear, att_val, n, h);
