@@ -151,7 +151,7 @@ public:
 //        ln_encoder->forward(enc_out_inter, enc_out_fin);
 //
 //        /* Decoder part operation word-by-word */
-//        Tensor<T> tgt_input(vector<int>{1, 1});
+//        Tensor<T> tgt_input(vector<int>{1, 1});       // {1, num}
 //        Tensor<bool> tgt_mask{};
 //        for (int i=0; i<max_len; i++)
 //        {
@@ -162,7 +162,7 @@ public:
 //            Tensor<T> tgt_embed{ };
 //            Tensor<T> dec_out_inter{ }; // intermediate output tensor from decoder
 //            Tensor<T> dec_out_fin{ };   // final output tensor from decoder LN
-//            embed_tgt->forward(tgt_input, tgt_embed);
+//            embed_tgt->forward(tgt_input, tgt_embed);         // {1, num, 512}
 //            decoder->forward(tgt_embed, dec_out_inter, enc_out_fin, tgt_mask, src_mask);
 //            ln_decoder->forward(dec_out_inter, dec_out_fin);
 //
@@ -183,8 +183,8 @@ public:
 //            std::cout << "next word: " << max_index << std::endl;
 //
 //            /* Concatenation */
-//            tgt_input.reshape(vector<int>{1, tgt_input.shape[1]+1});
-//            tgt_input[tgt_input.shape[1]-1] = max_index;
+//            tgt_input.reshape(vector<int>{1, tgt_input.shape[1]+1});          // {1, num +1}
+//            tgt_input[tgt_input.shape[1]-1] = max_index;      [0 4374 23 56 (20)]
 //        }
     }
 

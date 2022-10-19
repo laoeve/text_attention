@@ -134,9 +134,9 @@ int main(int argc, char* argv[]) {
     std::cout << "Input tensor dimension: " << input << std::endl;
 
     /* Run model */
-//    model->forward(input, output);
+    // model->forward(input, output);
 
-//    delete model;
+    // delete model;
     return 0;
 }
 

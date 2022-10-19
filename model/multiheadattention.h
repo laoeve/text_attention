@@ -195,10 +195,6 @@ public:
         Tensor<T> tmp4{};
         Tensor<T> attn{};
 
-        std::vector<int> out_shape = tmp2.shape;
-        out_shape[out_shape.size() -1] = tmp2.shape[tmp2.shape.size() -1] * heads;
-        tmp3.reshape(out_shape);    // {1, word_num, dim_model}
-
         // 2) scale dot attention
         // matmul(q, k^t)
         for (int h = 0; h < heads; ++h)
@@ -263,6 +259,10 @@ public:
                     tmp2[v_fcm[h]->shape[1]]=val2;
                 }
             }
+
+            std::vector<int> out_shape = tmp2.shape;
+            out_shape[tmp2.shape.size() -1] = tmp2.shape[tmp2.shape.size() -1] * heads;
+            tmp3.reshape(out_shape);    // {1, word_num, dim_model}
 
             /* Concat Head matrix */
             for(int cc_row = 0; cc_row < word_num; ++cc_row)
