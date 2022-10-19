@@ -166,7 +166,7 @@ std::map<int, std::string> vocab_parsing(std::string filename)
     std::ifstream input;
     input.open(filename);
     const bool print_log = false;
-    const std::regex re("\\('(.*?)', ([0-9]*)\\)");
+    const std::regex re("\\(['\"](.*?)[\"'], ([0-9]*)\\)");
 
     if (input.is_open()==false)
     {
@@ -194,6 +194,8 @@ std::map<int, std::string> vocab_parsing(std::string filename)
         }
     }
     input.close();
+
+    std::cout << "========================" << std::endl;
     return vocab;
 }
 

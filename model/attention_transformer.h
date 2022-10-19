@@ -62,6 +62,7 @@ public:
         const string LN_dec_mmh_str = "sublayer.0.norm";
         const string LN_dec_mh_str = "sublayer.1.norm";
         const string LN_dec_ff_str = "sublayer.2.norm";
+        const string LN_out = "norm";
         const string LN_gamma_str = "a_2";
         const string LN_beta_str = "b_2";
 
@@ -109,12 +110,16 @@ public:
                 ff_hidden_str, ff_out_str, 
                 LN_dec_mmh_str, LN_dec_mh_str, LN_dec_ff_str);
 
-        vector<T>* gamma = new vector<T>(param_map[prefix_enc+"."+LN_gamma_str].pvals);
-        vector<T>* beta = new vector<T>(param_map[prefix_enc+"."+LN_beta_str].pvals);
+        vector<T>* gamma = new vector<T>(
+                param_map[prefix_enc+"."+LN_out+"."+LN_gamma_str].pvals);
+        vector<T>* beta = new vector<T>(
+                param_map[prefix_enc+"."+LN_out+"."+LN_beta_str].pvals);
         ln_encoder = new LayerNorm<T>(prefix_enc, dim_embed, *gamma, *beta);
 
-        gamma = new vector<T>(param_map[prefix_dec+"."+LN_gamma_str].pvals);
-        beta = new vector<T>(param_map[prefix_dec+"."+LN_beta_str].pvals);
+        gamma = new vector<T>(
+                param_map[prefix_dec+"."+LN_out+"."+LN_gamma_str].pvals);
+        beta = new vector<T>(
+                param_map[prefix_dec+"."+LN_out+"."+LN_beta_str].pvals);
         ln_decoder = new LayerNorm<T>(prefix_dec, dim_embed, *gamma, *beta);
 
         /* Init generator layer */
@@ -141,16 +146,16 @@ public:
         Tensor<bool> src_mask{};
         TopModel<T>::set_enc_mask(input, src_mask);
 
-        input.print_all( );
-        src_mask.print_all( );
+        std::cout << "input " << input << std::endl;
+        std::cout << "src-mask " << src_mask << std::endl;
 
         /* Encoder forward */
         embed_src->forward(input, input_embed);
-        input_embed.print_all( );
+        std::cout << "input-embed " << input_embed << std::endl;
         encoder->forward(input_embed, enc_out_inter, src_mask);
+        std::cout << "enc-out-inter " << enc_out_inter << std::endl;
         ln_encoder->forward(enc_out_inter, enc_out_fin);
-
-        enc_out_inter.print_all( );
+        std::cout << "enc-out-fin " << enc_out_fin << std::endl;
 
 //        /* Decoder part operation word-by-word */
 //        Tensor<T> tgt_input(vector<int>{1, 1});

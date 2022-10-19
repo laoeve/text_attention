@@ -141,6 +141,7 @@ public:
 
         int num_input = input.shape[0];
         int num_row = input.shape[1];
+        int num_col = input.shape[2];
 
         Tensor<T> mh2linear;
         vector<int> out_shape{num_input, num_row, dim_model};
@@ -148,13 +149,25 @@ public:
 
         for (int n=0; n<num_input; n++)
         {
+            /* Extract a single input for 2D calculation */
+            Tensor<T> single_input{ };
+            single_input.reshape(std::vector<int>{num_row, num_col});
+            for (int i=0; i<num_row; i++)
+            {
+                for (int j=0; j<num_col; j++)
+                {
+                    single_input[i*num_col+j] = 
+                        input[n*num_row*num_col+i*num_col+j];
+                }
+            }
+
             for (int h=0; h<num_heads; h++)
             {
                 /* Calculate matrices: Q, K, V */
                 Tensor<T> mat_Q{};
                 Tensor<T> mat_K{};
                 Tensor<T> mat_V{};
-                get_QKV(mat_Q, mat_K, mat_V, input, memory, h);
+                get_QKV(mat_Q, mat_K, mat_V, single_input, memory, h);
 
                 /* Attention score (S=Q * K_t * scale) */
                 Tensor<T> att_score{};
@@ -201,12 +214,6 @@ private:
     void get_QKV(Tensor<T>& mat_Q, Tensor<T>& mat_K, Tensor<T>& mat_V,
             const Tensor<T>& input, const Tensor<T>& memory, const int head_idx)
     {
-        /* Determine output shapes */
-        vector<int> out_shape{input.shape[1], headDim};
-        mat_Q.reshape(out_shape);
-        mat_K.reshape(out_shape);
-        mat_V.reshape(out_shape);
-
         /* Calculate results of Q K V */
         linear_Q[head_idx]->forward(input, mat_Q);
         if (memory.is_void( ))

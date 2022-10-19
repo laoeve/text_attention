@@ -40,6 +40,7 @@ public:
             << " positionalEncoding.shape=" << *lut_pe << std::endl;
     }
 
+    //TODO: is batch considered?
     void forward(const Tensor<T>& input, Tensor<T>& output) override
     {
         /* Set shape */

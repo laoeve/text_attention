@@ -85,7 +85,7 @@ public:
                 for (int j=0; j<dim; j++)
                 {
                     float norm = (input[n*sz_stack+i*dim+j]-mean_x)/denominator;
-                    output[n*sz_stack+i*dim+j] = norm*(*gamma)[j]+(*beta)[j];
+                    output[n*sz_stack+i*dim+j] = norm*((*gamma)[j])+((*beta)[j]);
                 }
             }
         }

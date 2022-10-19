@@ -155,6 +155,29 @@ public:
             shape[0] = shape[1];
             shape[1] = tmp_s;
         }
+        else if (shape.size( )==3)
+        {
+            /* Batch transpose (1st dimension is batch size) */
+            std::vector<T>& vec = *this;
+            std::vector<T> tmp_v(shape[0]*shape[1]*shape[2]);
+
+            for (int n=0; n<shape[0]; n++)
+            {
+                for (int i=0; i<shape[1]; i++)
+                {
+                    for (int j=0; j<shape[2]; j++)
+                        tmp_v[n*shape[1]*shape[2]+j*shape[1]+i] = 
+                            vec[n*shape[1]*shape[2]+i*shape[2]+j];
+                }
+            }
+
+            for (int i=0; i<shape[0]*shape[1]*shape[2]; i++)
+                vec[i] = tmp_v[i];
+
+            int tmp_s = shape[1];
+            shape[1] = shape[2];
+            shape[2] = tmp_s;
+        }
         else 
         {
             std::cerr << "Error: only support 2D tensor transpose" << std::endl;
