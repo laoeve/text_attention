@@ -74,9 +74,9 @@ public:
                 for (int d_k=0; d_k<headDim; d_k++)
                 {
                     sanity_cntr++;
-                    tmp_Wq[line*dim_model+d_k] = in_Wq[line*dim_model+h*headDim+d_k];
-                    tmp_Wk[line*dim_model+d_k] = in_Wk[line*dim_model+h*headDim+d_k];
-                    tmp_Wv[line*dim_model+d_k] = in_Wv[line*dim_model+h*headDim+d_k];
+                    (*tmp_Wq)[line*dim_model+d_k] = in_Wq[line*dim_model+h*headDim+d_k];
+                    (*tmp_Wk)[line*dim_model+d_k] = in_Wk[line*dim_model+h*headDim+d_k];
+                    (*tmp_Wv)[line*dim_model+d_k] = in_Wv[line*dim_model+h*headDim+d_k];
                 }
             }
             assert(sanity_cntr==dim_model * headDim);
@@ -93,9 +93,9 @@ public:
             sanity_cntr =0;
             for(int d_k = 0; d_k < headDim; ++d_k){
                 sanity_cntr++;
-                tmp_Bq[d_k] = in_Bq[h*headDim+d_k];
-                tmp_Bk[d_k] = in_Bq[h*headDim+d_k];
-                tmp_Bv[d_k] = in_Bq[h*headDim+d_k];
+                (*tmp_Bq)[d_k] = in_Bq[h*headDim+d_k];
+                (*tmp_Bk)[d_k] = in_Bq[h*headDim+d_k];
+                (*tmp_Bv)[d_k] = in_Bq[h*headDim+d_k];
             }
             assert(sanity_cntr==headDim);
 
@@ -196,7 +196,7 @@ public:
         Tensor<T> attn{};
 
         std::vector<int> out_shape = tmp2.shape;
-        out_shape.shape[out_shape.shape.size() -1] = tmp2.shape[tmp2.shape.size() -1] * heads;
+        out_shape[out_shape.size() -1] = tmp2.shape[tmp2.shape.size() -1] * heads;
         tmp3.reshape(out_shape);    // {1, word_num, dim_model}
 
         // 2) scale dot attention
@@ -269,7 +269,7 @@ public:
             {    // num : len_word
                 for(int cc_col = 0; cc_col < d_k ; ++ cc_col)
                 {
-                    tmp3[dim_model*cc_row + h*d_k + cc_col] = tmp2[d_k*cc_row + cc_col]
+                    tmp3[dim_model*cc_row + h*d_k + cc_col] = tmp2[d_k*cc_row + cc_col];
                 }
             }
         }
