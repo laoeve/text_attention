@@ -51,7 +51,7 @@ public:
             exit(1);
         }
 
-        /* Multiplication */
+        /* Vector-matrix multiplication */
         multiply(input, output);
     }
 

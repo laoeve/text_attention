@@ -109,28 +109,28 @@ public:
         /* Init linear layers */
         for (int h=0; h<num_heads; h++)
         {
-            Linear<T>* lin_q = new Linear<T>(
+            Linear<T>* tmp_q = new Linear<T>(
                     prefix_str+"."+sa_query_str+".HD["+to_string(h)+"]", 
                     dim_model, headDim, *w_q[h], *b_q[h]);
-            Linear<T>* lin_k = new Linear<T>(
+            Linear<T>* tmp_k = new Linear<T>(
                     prefix_str+"."+sa_key_str+".HD["+to_string(h)+"]", 
                     dim_model, headDim, *w_k[h], *b_k[h]);
-            Linear<T>* lin_v = new Linear<T>(
+            Linear<T>* tmp_v = new Linear<T>(
                     prefix_str+"."+sa_value_str+".HD["+to_string(h)+"]", 
                     dim_model, headDim, *w_v[h], *b_v[h]);
 
-            qLinear.push_back(lin_q);
-            kLinear.push_back(lin_k);
-            vLinear.push_back(lin_v);
+            linear_Q.push_back(tmp_q);
+            linear_K.push_back(tmp_k);
+            linear_V.push_back(tmp_v);
 
-            lin_q->print_params( );
-            lin_k->print_params( );
-            lin_v->print_params( );
+            tmp_q->print_params( );
+            tmp_k->print_params( );
+            tmp_v->print_params( );
         }
         
-        outLinear = new Linear<T>(prefix_str+"."+sa_out_str,
+        linear_out = new Linear<T>(prefix_str+"."+sa_out_str,
                 dim_model, dim_model, *w_out, *b_out);
-        outLinear->print_params( );
+        linear_out->print_params( );
     }
 
     void forward(const Tensor<T> &input, Tensor<T> &output, 
@@ -178,25 +178,25 @@ public:
         }
 
         /* Output linear */
-        outLinear->forward(mh2linear, output);
+        linear_out->forward(mh2linear, output);
     }
 
     ~MultiheadAttention() 
     {
-        delete qLinear;
-        delete kLinear;
-        delete vLinear;
-        delete outLinear;
+        delete linear_Q;
+        delete linear_K;
+        delete linear_V;
+        delete linear_out;
     }
 
     uint64_t parameterCount() override {
         uint64_t ret = 0;
-        for (int i = 0; i < qLinear.size(); ++i) {
-            ret += qLinear[i]->parameterCount();
-            ret += kLinear[i]->parameterCount();
-            ret += vLinear[i]->parameterCount();
+        for (int i = 0; i < linear_Q.size(); ++i) {
+            ret += linear_Q[i]->parameterCount();
+            ret += linear_K[i]->parameterCount();
+            ret += linear_V[i]->parameterCount();
         }
-        if (outLinear != nullptr) ret += outLinear->parameterCount();
+        if (linear_out != nullptr) ret += linear_out->parameterCount();
         ret += softMax.parameterCount();
         return ret;
     }
@@ -212,16 +212,16 @@ private:
         mat_V.reshape(out_shape);
 
         /* Calculate results of Q K V */
-        qLinear[head_idx]->forward(input, mat_Q);
+        linear_Q[head_idx]->forward(input, mat_Q);
         if (memory.is_void( ))
         {
-            kLinear[head_idx]->forward(input, mat_K);
-            vLinear[head_idx]->forward(input, mat_V);
+            linear_K[head_idx]->forward(input, mat_K);
+            linear_V[head_idx]->forward(input, mat_V);
         }
-        else
+        else // decoder use this
         {
-            kLinear[head_idx]->forward(memory, mat_K);
-            vLinear[head_idx]->forward(memory, mat_V);
+            linear_K[head_idx]->forward(memory, mat_K);
+            linear_V[head_idx]->forward(memory, mat_V);
         }
     }
 
@@ -233,13 +233,13 @@ private:
 
         /* Matrix multiplication */
         assert(mat_Q.shape[1]==headDim);
-        matmul(att_score, mat_Q, mat_K);
+        Layer<T>::matmul(att_score, mat_Q, mat_K, scale);
     }
 
     void get_attention_value(Tensor<T>& att_val,
             const Tensor<T>& att_dist, const Tensor<T>& mat_V)
     {
-        matmul(att_val, att_dist, mat_V);
+        Layer<T>::matmul(att_val, att_dist, mat_V, 1.0);
     }
 
     void concat_attention(Tensor<T>& out, const Tensor<T>& att_val, 
@@ -261,34 +261,6 @@ private:
         }
     }
 
-    //TODO: optimize in future if possible
-    void matmul(Tensor<T>& out, const Tensor<T>& opa, const Tensor<T>& opb)
-    {
-        assert(opa.shape[1]==opb.shape[0]);
-        
-        /* Determine output shapes */
-        int num_row = opa.shape[0];
-        int num_col = opb.shape[1];
-        int num_col_opa = opa.shape[1];
-        vector<int> out_shape{num_row, num_col};
-        out.reshape(out_shape);
-
-        /* Matrix multiplication */
-        for (int i=0; i<num_row; i++)
-        {
-            for (int j=0; j<num_col; j++)
-            {
-                out[i*num_col+j] = 0;
-                for (int k=0;k<num_col_opa; k++)
-                {
-                    out[i*num_col+j] += 
-                        opa[i*num_col_opa+k]*opb[k*num_col+j];
-                }
-                out[i*num_col+j] *= scale;
-            }
-        }
-    }
-
     bool is_operable(const Tensor<T>& op)
     {
         /* 
@@ -301,11 +273,11 @@ private:
         return true;
     }
 
-    std::vector<Linear<T> *>qLinear;
-    std::vector<Linear<T> *>kLinear;
-    std::vector<Linear<T> *>vLinear;
+    std::vector<Linear<T> *>linear_Q;
+    std::vector<Linear<T> *>linear_K;
+    std::vector<Linear<T> *>linear_V;
 
-    Linear<T> *outLinear = nullptr;
+    Linear<T> *linear_out = nullptr;
     SoftMax<T> softMax;
     int dim_model;
     int num_heads;
