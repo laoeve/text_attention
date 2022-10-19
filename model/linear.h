@@ -23,9 +23,7 @@ public:
 
         if (weights->shape[0]==out_feature && 
                 weights->shape[1]==in_feature)
-            need_wtranspose = true;
-        else
-            need_wtranspose = false;
+            weights->transpose( );
     }
 
     uint64_t parameterCount() override {
@@ -52,10 +50,6 @@ public:
             assert(0);
             exit(1);
         }
-
-        /* Transpose */
-        if (need_wtranspose)
-            weights->transpose( );
 
         /* Multiplication */
         multiply(input, output);
@@ -129,7 +123,6 @@ private:
     std::string name;
     int in_feature;
     int out_feature;
-    bool need_wtranspose;
 };
 }
 #endif //ATTENTION_TRANSFORMER_CPP_LINEAR_H

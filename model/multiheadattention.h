@@ -27,8 +27,8 @@ public:
             const string weight_str, const string bias_str, 
             const string sa_query_str, const string sa_key_str,
             const string sa_value_str, const string sa_out_str)
-    : Layer<T>(master), dim_model(dim_model), scale(1/sqrt(dim_model/heads)),
-      heads(num_heads), headDim(dim_model/num_heads)
+    : Layer<T>(master), dim_model(dim_model), scale(1/sqrt(dim_model/num_heads)),
+      num_heads(num_heads), headDim(dim_model/num_heads)
     {
         std::cout << ">>>> Init multihead sublayer - " << std::endl;
         uint64_t sanity_cntr = 0;
@@ -62,7 +62,7 @@ public:
         std::vector<Tensor<T> *>b_q;
         std::vector<Tensor<T> *>b_k;
         std::vector<Tensor<T> *>b_v;
-        for (int h=0; h<heads; h++)
+        for (int h=0; h<num_heads; h++)
         {
             /* Weight division */
             Tensor<T>* tmp_Wq = new Tensor<T>(vector<int>{512,64});
@@ -107,7 +107,7 @@ public:
         }
 
         /* Init linear layers */
-        for (int h=0; h<heads; h++)
+        for (int h=0; h<num_heads; h++)
         {
             Linear<T>* lin_q = new Linear<T>(
                     prefix_str+"."+sa_query_str+".HD["+to_string(h)+"]", 
@@ -136,147 +136,49 @@ public:
     void forward(const Tensor<T> &input, Tensor<T> &output, 
             const Tensor<bool> &mask, const Tensor<T> &memory) override 
     {
-        std::cout << "MultiheadAttention.Forward" << std::endl;
-        Tensor<T> tmp1{};
-        tmp1 = input;
-        
-        // 1) Linear FC Layer Projection
-        // lin(x) for lin, x in zip(self.linears, (query, key, value))
-
-        if(memory.is_void( )==false)
+       if (is_operable(input)==false)
         {
-            for(auto item : (this->qLinear))
-            {
-                Tensor<T>* q_tmp = new Tensor<T>{};
-                item->forward(tmp1, *q_tmp);
-                q_fcm.push_back(q_tmp);
-            }
-            for(auto item : (this->kLinear))
-            {
-                Tensor<T>* k_tmp = new Tensor<T>{};
-                item->forward(memory, *k_tmp);
-                k_fcm.push_back(k_tmp);
-            }
-            for(auto item : (this->vLinear))
-            {
-                Tensor<T>* v_tmp = new Tensor<T>{};
-                item->forward(memory, *v_tmp);
-                v_fcm.push_back(v_tmp);
-            }
+            std::cerr << "Error: dimension error on " << name << std::endl;
+            assert(0);
+            exit(1);
         }
-        else
+
+        int num_input = input.shape[0];
+        int num_row = input.shape[1];
+
+        Tensor<T> mh2linear;
+        vector<int> out_shape{num_input, num_row, dim_model};
+        mh2linear.reshape(out_shape);
+
+        for (int n=0; n<num_input; n++)
         {
-            for(auto item : (this->qLinear))
+            for (int h=0; h<num_heads; h++)
             {
-                Tensor<T>* q_tmp = new Tensor<T>{};
-                item->forward(tmp1, *q_tmp);
-                q_fcm.push_back(q_tmp);
-            }
-            for(auto item : (this->kLinear))
-            {
-                Tensor<T>* k_tmp = new Tensor<T>{};
-                item->forward(tmp1, *k_tmp);
-                k_fcm.push_back(k_tmp);
-            }
-            for(auto item : (this->vLinear))
-            {
-                Tensor<T>* v_tmp = new Tensor<T>{};
-                item->forward(tmp1, *v_tmp);
-                v_fcm.push_back(v_tmp);
+                /* Calculate matrices: Q, K, V */
+                Tensor<T> M_Q{};
+                Tensor<T> M_K{};
+                Tensor<T> M_V{};
+                get_QKV(mat_Q, mat_K, mat_V, input, memory);
+
+                /* Attention score (S=Q * K_t / scale) */
+                Tensor<T> att_score{};
+                get_attention_score(att_score, M_Q, M_K);
+
+                /* Attention distribution (D=softmax[S]) */
+                Tensore<T> att_dist{};
+                softmax.forward(att_score, att_dist);
+
+                /* Attention value matrix (A=D * V) */
+                Tensor<T> att_val{ };
+                get_attention_value(att_val, att_dist, M_V);
+                
+                /* Concatenate multiple heads */
+                concat(mh2linear, att_val, n, h);
             }
         }
 
-        int word_num = q_fcm[0]->shape[q_fcm[0]->shape.size() - 2];
-        int d_k = q_fcm[0]->shape[q_fcm[0]->shape.size() - 1];
-
-        Tensor<T> dots(vector<int> {1,word_num,word_num});
-        Tensor<T> tmp2{};
-        Tensor<T> tmp3(vector<int> {1,word_num,word_num});
-        Tensor<T> tmp4{};
-        Tensor<T> attn{};
-
-        std::vector<int> out_shape = tmp2.shape;
-        out_shape.shape[out_shape.shape.size() -1] = tmp2.shape[tmp2.shape.size() -1] * heads;
-        tmp3.reshape(out_shape);    // {1, word_num, dim_model}
-
-        // 2) scale dot attention
-        // matmul(q, k^t)
-        for (int h = 0; h < heads; ++h)
-        {
-            for (int pi = 0; pi < word_num; ++pi)
-            {
-                for (int pj = 0; pj < word_num; ++pj)
-                {
-                    T val = 0;
-                    for (int pk = 0; pk < d_k; ++pk)
-                    {
-                        val += (*q_fcm[h])[pi * d_k + pk]
-                         * (*k_fcm[h])[pj * d_k + pk]
-                         * scale;
-                    }
-                    dots[pi*word_num + pj] = val;
-                }
-            }
-
-            if (mask.is_void( )==false)
-            {
-                if(mask.shape[mask.shape.size()-1] == mask.shape[mask.shape.size()-2])
-                {   //condition : src_mask {1 * num}
-                    for (int p = 0; p < mask.shape[1]; ++p)
-                    {   
-                        for (int j = 0; j < mask.shape[2]; ++j)
-                        {
-                            if(mask[j] == false)
-                            {
-                                dots[mask.shape[2] * p + j] = -1e9;
-                            }
-                        }
-                    }
-                } else { //condition : tgt_mask {num * num}
-                    for (int p = 0; p < mask.shape[1]; ++p)
-                    {
-                        for (int j = 0; j < mask.shape[2]; ++j)
-                        {
-                            if(mask[mask.shape[2] * p + j] == false)
-                            {
-                                dots[mask.shape[2] * p + j] = -1e9;
-                            }
-                        }
-                    }
-                }
-            }
-
-            softMax.forward(dots, attn);
-
-            /* matmul with v */
-            tmp2.reshape(q_fcm[h]->shape);   // {1,num,headDim}
-            for (int pi = 0; pi < attn.shape[1]; ++pi)
-            {
-                for (int pj = 0; pj < v_fcm[h]->shape[1]; ++pj)
-                {
-                    T val2 = 0;
-                    for (int pk = 0; pk < attn.shape[2]; ++pk)
-                    {
-                        val2 += attn[pi * attn.shape[2] + pk] *
-                            (*v_fcm[h])[pk * v_fcm[h]->shape[2] + pj];
-                    }
-                    tmp2[v_fcm[h]->shape[1]]=val2;
-                }
-            }
-
-            /* Concat Head matrix */
-            for(int cc_row = 0; cc_row < word_num; ++cc_row)
-            {    // num : len_word
-                for(int cc_col = 0; cc_col < d_k ; ++ cc_col)
-                {
-                    tmp3[dim_model*cc_row + h*d_k + cc_col] = tmp2[d_k*cc_row + cc_col]
-                }
-            }
-        }
-
-        // 3) final linear
-        outLinear->forward(tmp3, tmp4);
-        output = tmp4;
+        /* Output linear */
+        outLinear->forward(mh2linear, output);
     }
 
     ~MultiheadAttention() 
@@ -300,6 +202,38 @@ public:
     }
 
 private:
+    void get_QKV(Tensor<T>& mat_Q, Tensor<T>& mat_K, Tensor<T>& mat_V,
+            const Tensor<T>& input, const Tensor<T>& memory)
+    {
+    }
+
+    void get_attention_score(Tensor<T>& att_score, 
+            const Tensor<T>& mat_Q, const Tensor<T>& mat_K)
+    {
+    }
+
+    void get_attention_value(Tensor<T>& att_val,
+            const Tensor<T>& att_dist, const Tensor<T>& mat_V)
+    {
+    }
+
+    void concat(Tensor<T>& out, const Tensor<T>& att_val, 
+            int input_idx, int head_idx)
+    {
+    }
+
+    bool is_operable(const Tensor<T>& op)
+    {
+        /* 
+         * Dimension of '3' means multiple inputs 
+         * op can be seen as [#INPUT x #WORDS x DIM_EMBED]
+         */
+        if (op.get_dims( )!=3 || op.shape[2]!=dim_model)
+            return false;
+        
+        return true;
+    }
+
     std::vector<Linear<T> *>qLinear;
     std::vector<Linear<T> *>kLinear;
     std::vector<Linear<T> *>vLinear;
@@ -311,7 +245,7 @@ private:
     Linear<T> *outLinear = nullptr;
     SoftMax<T> softMax;
     int dim_model;
-    int heads;
+    int num_heads;
     int headDim;
     T scale;
 };
