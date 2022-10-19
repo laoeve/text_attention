@@ -33,7 +33,6 @@ public:
       num_heads(num_heads), headDim(dim_model/num_heads)
     {
         std::cout << ">>>> Init multihead sublayer - " << std::endl;
-        uint64_t sanity_cntr = 0;
 
         /* Setup indexing string for query, key, value, output parameters */
         string wq_str = prefix_str+"."+sa_query_str+"."+weight_str;
@@ -71,17 +70,15 @@ public:
             Tensor<T>* tmp_Wk = new Tensor<T>(vector<int>{dim_model,headDim});
             Tensor<T>* tmp_Wv = new Tensor<T>(vector<int>{dim_model,headDim});
 
-            for (int line=0; line<dim_model; line++)
+            for (int i=0; i<dim_model; i++)
             {
-                for (int d_k=0; d_k<headDim; d_k++)
+                for (int j=0; j<headDim; j++)
                 {
-                    sanity_cntr++;
-                    (*tmp_Wq)[line*dim_model+d_k] = in_Wq[line*dim_model+h*headDim+d_k];
-                    (*tmp_Wk)[line*dim_model+d_k] = in_Wk[line*dim_model+h*headDim+d_k];
-                    (*tmp_Wv)[line*dim_model+d_k] = in_Wv[line*dim_model+h*headDim+d_k];
+                    (*tmp_Wq)[i*headDim+j] = in_Wq[i*dim_model+h*headDim+j];
+                    (*tmp_Wk)[i*headDim+j] = in_Wk[i*dim_model+h*headDim+j];
+                    (*tmp_Wv)[i*headDim+j] = in_Wv[i*dim_model+h*headDim+j];
                 }
             }
-            assert(sanity_cntr==dim_model * headDim);
 
             w_q.push_back(tmp_Wq);
             w_k.push_back(tmp_Wk);
@@ -92,20 +89,17 @@ public:
             Tensor<T>* tmp_Bk = new Tensor<T>(vector<int>{headDim});
             Tensor<T>* tmp_Bv = new Tensor<T>(vector<int>{headDim});
 
-            sanity_cntr =0;
-            for(int d_k = 0; d_k < headDim; ++d_k){
-                sanity_cntr++;
-                (*tmp_Bq)[d_k] = in_Bq[h*headDim+d_k];
-                (*tmp_Bk)[d_k] = in_Bq[h*headDim+d_k];
-                (*tmp_Bv)[d_k] = in_Bq[h*headDim+d_k];
+            for (int i=0; i<headDim; i++)
+            {
+                (*tmp_Bq)[i] = in_Bq[h*headDim+i];
+                (*tmp_Bk)[i] = in_Bk[h*headDim+i];
+                (*tmp_Bv)[i] = in_Bv[h*headDim+i];
+
             }
-            assert(sanity_cntr==headDim);
 
             b_q.push_back(tmp_Bq);
             b_k.push_back(tmp_Bk);
             b_v.push_back(tmp_Bv);
-            
-            sanity_cntr = 0;
         }
 
         /* Init linear layers */

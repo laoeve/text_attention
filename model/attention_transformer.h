@@ -148,8 +148,10 @@ public:
         embed_src->forward(input, input_embed);
         input_embed.print_all( );
         encoder->forward(input_embed, enc_out_inter, src_mask);
-//        ln_encoder->forward(enc_out_inter, enc_out_fin);
-//
+        ln_encoder->forward(enc_out_inter, enc_out_fin);
+
+        enc_out_inter.print_all( );
+
 //        /* Decoder part operation word-by-word */
 //        Tensor<T> tgt_input(vector<int>{1, 1});
 //        Tensor<bool> tgt_mask{};

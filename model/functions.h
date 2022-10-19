@@ -177,7 +177,6 @@ std::map<int, std::string> vocab_parsing(std::string filename)
 
     std::string line;
     std::map<int, std::string> vocab;
-
     while(input) {
         getline(input, line);
         int vocab_num=0;
@@ -193,7 +192,6 @@ std::map<int, std::string> vocab_parsing(std::string filename)
             //std::cout << std::endl;
             line = m.suffix();
         }
-        
     }
     input.close();
     return vocab;
