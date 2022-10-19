@@ -141,7 +141,6 @@ public:
 
         int num_input = input.shape[0];
         int num_row = input.shape[1];
-        int num_col = input.shape[2];
 
         Tensor<T> mh2linear;
         vector<int> out_shape{num_input, num_row, dim_model};
@@ -151,15 +150,7 @@ public:
         {
             /* Extract a single input for 2D calculation */
             Tensor<T> single_input{ };
-            single_input.reshape(std::vector<int>{num_row, num_col});
-            for (int i=0; i<num_row; i++)
-            {
-                for (int j=0; j<num_col; j++)
-                {
-                    single_input[i*num_col+j] = 
-                        input[n*num_row*num_col+i*num_col+j];
-                }
-            }
+            split_batch_layer(single_input, input, n);
 
             for (int h=0; h<num_heads; h++)
             {
@@ -211,6 +202,23 @@ public:
     }
 
 private:
+    void split_batch_layer(Tensor<T>& single_input, 
+            const Tensor<T>& input, const int input_idx)
+    {
+        int num_row = input.shape[1];
+        int num_col = input.shape[2];
+
+        single_input.reshape(std::vector<int>{num_row, num_col});
+        for (int i=0; i<num_row; i++)
+        {
+            for (int j=0; j<num_col; j++)
+            {
+                single_input[i*num_col+j] = 
+                    input[input_idx*num_row*num_col+i*num_col+j];
+            }
+        }
+    }
+
     void get_QKV(Tensor<T>& mat_Q, Tensor<T>& mat_K, Tensor<T>& mat_V,
             const Tensor<T>& input, const Tensor<T>& memory, const int head_idx)
     {

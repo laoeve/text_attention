@@ -157,22 +157,25 @@ public:
         ln_encoder->forward(enc_out_inter, enc_out_fin);
         std::cout << "enc-out-fin " << enc_out_fin << std::endl;
 
-//        /* Decoder part operation word-by-word */
-//        Tensor<T> tgt_input(vector<int>{1, 1});
-//        Tensor<bool> tgt_mask{};
-//        for (int i=0; i<max_len; i++)
-//        {
-//            /* Setup target mask */
-//            TopModel<T>::set_dec_mask(tgt_input, tgt_mask);
-//
-//            /* Decoder forward */
-//            Tensor<T> tgt_embed{ };
-//            Tensor<T> dec_out_inter{ }; // intermediate output tensor from decoder
-//            Tensor<T> dec_out_fin{ };   // final output tensor from decoder LN
-//            embed_tgt->forward(tgt_input, tgt_embed);
-//            decoder->forward(tgt_embed, dec_out_inter, enc_out_fin, tgt_mask, src_mask);
-//            ln_decoder->forward(dec_out_inter, dec_out_fin);
-//
+        /* Decoder part operation word-by-word */
+        Tensor<T> tgt_input(vector<int>{1, 1});
+        Tensor<bool> tgt_mask{};
+        for (int i=0; i<max_len; i++)
+        {
+            std::cout << "=====word " << i << "=====" << std::endl;
+            /* Setup target mask */
+            TopModel<T>::set_dec_mask(tgt_input, tgt_mask);
+            std::cout << "tgt_input " << tgt_input << std::endl;
+            std::cout << "tgt_mask " << tgt_mask << std::endl;
+
+            /* Decoder forward */
+            Tensor<T> tgt_embed{ };
+            Tensor<T> dec_out_inter{ }; // intermediate output tensor from decoder
+            Tensor<T> dec_out_fin{ };   // final output tensor from decoder LN
+            embed_tgt->forward(tgt_input, tgt_embed);
+            decoder->forward(tgt_embed, dec_out_inter, enc_out_fin, tgt_mask, src_mask);
+            ln_decoder->forward(dec_out_inter, dec_out_fin);
+
 //            /* Output preparation */
 //            int gen_len = dec_out_fin.shape[dec_out_fin.get_dims( )-1];
 //            Tensor<T> gen_in(vector<int>{1, gen_len}, 
@@ -189,10 +192,10 @@ public:
 //                std::max_element(sm_out.begin( ), sm_out.end( ))-sm_out.begin( );
 //            std::cout << "next word: " << max_index << std::endl;
 //
-//            /* Concatenation */
+//            /* Concatenate input */
 //            tgt_input.reshape(vector<int>{1, tgt_input.shape[1]+1});
 //            tgt_input[tgt_input.shape[1]-1] = max_index;
-//        }
+        }
     }
 
     uint64_t parameterCount() 

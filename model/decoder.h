@@ -63,6 +63,7 @@ public:
 
             blockPtr->forward(tmp_in, output, memory, tgt_mask, src_mask);
             tmp_in = output;
+            std::cout << output << std::endl;
         }
     }
 
