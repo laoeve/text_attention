@@ -1,14 +1,40 @@
-//
-// Created by dianh on 2021/04/16.
-//
-// Modified by hjpark
-// based from window_attention.h
+/*
+ * Copyright (c) 2022 Computer Architecture and Paralllel Processing Lab, 
+ * Seoul National University, Republic of Korea. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     1. Redistribution of source code must retain the above copyright 
+ *        notice, this list of conditions and the follwoing disclaimer.
+ *     2. Redistributions in binary form must reproduce the above copyright 
+ *        notice, this list conditions and the following disclaimer in the 
+ *        documentation and/or other materials provided with the distirubtion.
+ *     3. Neither the name of the copyright holders nor the name of its 
+ *        contributors may be used to endorse or promote products derived from 
+ *        this software without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: 
+ * Hyokeun Lee (hklee@capp.snu.ac.kr)
+ * Hyunjun Park (laoeve@capp.snu.ac.kr)
+ *
+ */
 
 #ifndef ATTENTION_TRANSFORMER_CPP_MULTIHEADATTENTION_H
 #define ATTENTION_TRANSFORMER_CPP_MULTIHEADATTENTION_H
 
-#include <cmath>
-
+#include "bits/stdc++.h"
 #include "top_model.h"
 #include "layer.h"
 #include "tensor.h"
@@ -22,7 +48,8 @@ using namespace std;
 
 namespace text_attention {
 template<typename T>
-class MultiheadAttention : virtual public Layer<T> {
+class MultiheadAttention : virtual public Layer<T> 
+{
 public:
     MultiheadAttention(TopModel<T>* master,
             int dim_model, int num_heads, const string prefix_str,
@@ -129,7 +156,7 @@ public:
         linear_out->print_params( );
     }
 
-    void forward(const Tensor<T> &input, Tensor<T> &output, 
+    void forward(Tensor <T> &output, const Tensor<T> &input,
             const Tensor<bool> &mask, const Tensor<T> &memory) override 
     {
        if (is_operable(input)==false)
@@ -180,7 +207,7 @@ public:
         }
 
         /* Output linear */
-        linear_out->forward(mh2linear, output);
+        linear_out->forward(output, mh2linear);
     }
 
     ~MultiheadAttention() 
@@ -191,9 +218,11 @@ public:
         delete linear_out;
     }
 
-    uint64_t parameterCount() override {
+    uint64_t parameterCount() override 
+    {
         uint64_t ret = 0;
-        for (int i = 0; i < linear_Q.size(); ++i) {
+        for (int i = 0; i < linear_Q.size(); ++i) 
+        {
             ret += linear_Q[i]->parameterCount();
             ret += linear_K[i]->parameterCount();
             ret += linear_V[i]->parameterCount();
@@ -228,16 +257,16 @@ private:
             const Tensor<T>& input, const Tensor<T>& memory, const int head_idx)
     {
         /* Calculate results of Q K V */
-        linear_Q[head_idx]->forward(input, mat_Q);
+        linear_Q[head_idx]->forward(mat_Q, input);
         if (memory.is_void( ))
         {
-            linear_K[head_idx]->forward(input, mat_K);
-            linear_V[head_idx]->forward(input, mat_V);
+            linear_K[head_idx]->forward(mat_K, input);
+            linear_V[head_idx]->forward(mat_V, input);
         }
         else // decoder use this
         {
-            linear_K[head_idx]->forward(memory, mat_K);
-            linear_V[head_idx]->forward(memory, mat_V);
+            linear_K[head_idx]->forward(mat_K, memory);
+            linear_V[head_idx]->forward(mat_V, memory);
         }
     }
 
@@ -258,17 +287,16 @@ private:
         /* Mask out values */
         if (mask.is_void( )==false)
         {
-            if (mask.get_dims( )==3)
+            if (mask.get_dims( )==2)
             {
                 /* Target mask */
-#ifdef MULTIHEAD_DBG
-                assert(mask.shape[0]==1);
-                if (att_score.shape[0]!=mask.shape[1] ||
-                    att_score.shape[1]!=mask.shape[2] ||
-                    mask.shape[1]!=mask.shape[2])
+#ifdef DEBUG
+                if (att_score.shape[0]!=mask.shape[0] ||
+                    att_score.shape[1]!=mask.shape[1] ||
+                    mask.shape[0]!=mask.shape[1])
                 {
                     std::cerr << "Error: dimension error while getting"
-                        << " masked (from target) results" << std::endl;
+                        << " target masked results" << std::endl;
                     assert(0);
                     exit(1);
                 }
@@ -287,35 +315,36 @@ private:
             }
             else
             {
-                /* Source mask */
-#ifdef MULTIHEAD_DBG
-                if (mask.get_dims( )!=2 ||
-                    mask.shape[1]!=att_score.shape[0] ||
-                    att_score.shape[0]!=att_score.shape[1])
+                /* Source/encoder-attention mask */
+#ifdef DEBUG
+                if (mask.get_dims( )!=3 ||
+                    att_score.shape[0]!=mask.shape[1] ||
+                    att_score.shape[1]!=mask.shape[2])
                 {
                     std::cerr << "Error: dimension error while getting"
-                        << " masked (from source) result" << std::endl;
+                        << " encoder masked result" << std::endl;
                     assert(0);
                     exit(1);
                 }
 #endif
-
-                uint64_t len = att_score.shape[0];
-                for (int i=0; i<len; i++)
+                uint64_t len_tgt = mask.shape[1];
+                uint64_t len_enc = mask.shape[2];
+                uint64_t offset = input_idx*len_tgt*len_enc;
+                for (int i=0; i<len_tgt; i++)
                 {
-                    for (int j=0; j<len; j++)
+                    for (int j=0; j<len_enc; j++)
                     {
-                        if (mask[input_idx*len+j])
+                        if (mask[offset+i*len_enc+j])
                             continue;
 
-                        att_score[i*len+j] = -1e9;
+                        att_score[i*len_enc+j] = -1e9;
                     }
                 }
             }
         }
 
         /* Calculate distribution */
-        softMax.forward(att_score, att_dist);
+        softMax.forward(att_dist, att_score);
     }
 
     void get_attention_value(Tensor<T>& att_val,

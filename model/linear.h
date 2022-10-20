@@ -1,12 +1,11 @@
 //
 // Created by dianh on 2021/04/16.
 //
-// Modified by hjpark
-// we changed the linear function to import the weight from external files
 
 #ifndef ATTENTION_TRANSFORMER_CPP_LINEAR_H
 #define ATTENTION_TRANSFORMER_CPP_LINEAR_H
 
+#include "bits/stdc++.h"
 #include "tensor.h"
 #include "layer.h"
 
@@ -26,7 +25,8 @@ public:
             weights->transpose( );
     }
 
-    uint64_t parameterCount() override {
+    uint64_t parameterCount() override 
+    {
         return weights->size() + bias->size();
     }
 
@@ -42,7 +42,7 @@ public:
             << " bias.shape=" << *bias << std::endl;
     }
 
-    void forward(const Tensor <T> &input, Tensor <T> &output) override 
+    void forward(Tensor <T> &output, const Tensor <T> &input) override 
     {
         if (is_operable(input)==false)
         {

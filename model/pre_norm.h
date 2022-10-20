@@ -5,6 +5,7 @@
 #ifndef ATTENTION_TRANSFORMER_CPP_PRE_NORM_H
 #define ATTENTION_TRANSFORMER_CPP_PRE_NORM_H
 
+#include "bits/stdc++.h"
 #include "top_model.h"
 #include "layer.h"
 #include "layer_norm.h"
@@ -41,11 +42,11 @@ public:
         return ret;
     }
 
-    void forward(const Tensor <T> &input, Tensor <T> &output, 
+    void forward(Tensor <T> &output, const Tensor <T> &input, 
             const Tensor<bool> &mask, const Tensor<T> &memory) override {
         Tensor<T> fn2ln{};
-        fn->forward(input, fn2ln, mask, memory);
-        layerNorm->forward(fn2ln, output);
+        fn->forward(fn2ln, input, mask, memory);
+        layerNorm->forward(output, fn2ln);
     }
 
 private:

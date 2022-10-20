@@ -25,7 +25,6 @@ typedef struct _pinfo_t
     std::vector<float> pvals;
 } pinfo_t;
 
-int max_len = 128;
 std::map<std::string, pinfo_t> input_idx;
 std::map<std::string, pinfo_t> param_map;
 

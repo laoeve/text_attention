@@ -1,8 +1,35 @@
-//
-// Created by dianh on 2021/04/16.
-//
-// Modified by hjpark
-// swin_transformer.h
+/*
+ * Copyright (c) 2022 Computer Architecture and Paralllel Processing Lab, 
+ * Seoul National University, Republic of Korea. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     1. Redistribution of source code must retain the above copyright 
+ *        notice, this list of conditions and the follwoing disclaimer.
+ *     2. Redistributions in binary form must reproduce the above copyright 
+ *        notice, this list conditions and the following disclaimer in the 
+ *        documentation and/or other materials provided with the distirubtion.
+ *     3. Neither the name of the copyright holders nor the name of its 
+ *        contributors may be used to endorse or promote products derived from 
+ *        this software without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: 
+ * Hyokeun Lee (hklee@capp.snu.ac.kr)
+ * Hyunjun Park (laoeve@capp.snu.ac.kr)
+ *
+ */
 
 #ifndef ATTENTION_TRANSFORMER_CPP_ATTENTION_TRANSFORMER_H
 #define ATTENTION_TRANSFORMER_CPP_ATTENTION_TRANSFORMER_H
@@ -18,6 +45,7 @@
 #include "layer_norm.h"
 #include "softmax.h"
 #include "linear.h"
+#include "max_tensor.h"
 
 using namespace std;
 
@@ -29,7 +57,8 @@ public:
     AttentionTransformer(int voca_src_size, int voca_tgt_size)
     : voca_src_size(voca_src_size),voca_tgt_size(voca_tgt_size)
     {
-        /* Template: string keys */
+        /* Template */
+        SENTENCE_LEN = 128;
         TopModel<T>::num_layers = 6;
         TopModel<T>::dim_embed = 512;
         TopModel<T>::num_heads = 8;
@@ -136,7 +165,7 @@ public:
         generator->print_params( );
     }
 
-    void forward(const Tensor<T> &input, Tensor<T> &output) override 
+    void forward(Tensor<T> &output, const Tensor<T> &input) override 
     {
         Tensor<T> enc_out_inter{};  // intermediate output tensor from encoder
         Tensor<T> enc_out_fin{};    // final output tensor from encoder LN
@@ -144,63 +173,61 @@ public:
 
         /* Setup encoder mask */
         Tensor<bool> src_mask{};
-        TopModel<T>::set_enc_mask(input, src_mask);
+        TopModel<T>::set_pad_mask(src_mask, input, input);
 
         std::cout << "input " << input << std::endl;
         std::cout << "src-mask " << src_mask << std::endl;
 
         /* Encoder forward */
-        embed_src->forward(input, input_embed);
+        embed_src->forward(input_embed, input);
         std::cout << "input-embed " << input_embed << std::endl;
-        encoder->forward(input_embed, enc_out_inter, src_mask);
+        encoder->forward(enc_out_inter, input_embed, src_mask);
         std::cout << "enc-out-inter " << enc_out_inter << std::endl;
-        ln_encoder->forward(enc_out_inter, enc_out_fin);
+        ln_encoder->forward(enc_out_fin, enc_out_inter);
         std::cout << "enc-out-fin " << enc_out_fin << std::endl;
 
         /* Decoder part operation word-by-word */
-//        Tensor<T> tgt_input(vector<int>{input.shape[0], 1});
-        Tensor<T> tgt_input(input.shape);
-        tgt_input[0] = 1;
-        Tensor<bool> tgt_mask{};
-        for (int i=0; i<max_len; i++)
+        Tensor<T> tgt_input(vector<int>{input.shape[0], 2});
+        tgt_input[0] = 1; // <start of sentence>
+        for (int i=0; i<SENTENCE_LEN-2; i++)
         {
             std::cout << "=====word " << i << "=====" << std::endl;
             /* Setup target mask */
-            TopModel<T>::set_dec_mask(tgt_input, tgt_mask);
+            Tensor<bool> enc_mask{};
+            Tensor<bool> tgt_mask{};
+            TopModel<T>::set_pad_mask(enc_mask, tgt_input, input);
+            TopModel<T>::set_dec_mask(tgt_mask, tgt_input);
             std::cout << "tgt_input " << tgt_input << std::endl;
+            std::cout << "enc_mask " << enc_mask << std::endl;
             std::cout << "tgt_mask " << tgt_mask << std::endl;
 
             /* Decoder forward */
             Tensor<T> tgt_embed{ };
             Tensor<T> dec_out_inter{ }; // intermediate output tensor from decoder
             Tensor<T> dec_out_fin{ };   // final output tensor from decoder LN
-            embed_tgt->forward(tgt_input, tgt_embed);
+            embed_tgt->forward(tgt_embed, tgt_input);
             std::cout << "tgt_embed " << tgt_embed << std::endl;
-            decoder->forward(tgt_embed, dec_out_inter, enc_out_fin, tgt_mask, src_mask);
+            decoder->forward(dec_out_inter, tgt_embed, enc_out_fin, tgt_mask, enc_mask);
             std::cout << "dec_out_inter " << dec_out_inter << std::endl;
-            ln_decoder->forward(dec_out_inter, dec_out_fin);
+            ln_decoder->forward(dec_out_fin, dec_out_inter);
             std::cout << "dec_out_fin " << dec_out_fin << std::endl;
 
-            assert(0);
-//            /* Output preparation */
-//            int gen_len = dec_out_fin.shape[dec_out_fin.get_dims( )-1];
-//            Tensor<T> gen_in(vector<int>{1, gen_len}, 
-//                    dec_out_fin.end( )-gen_len, dec_out_fin.end( ));
-//
-//            /* Generator and softmax */
-//            Tensor<T> gen_out{ };
-//            Tensor<T> sm_out{ };
-//            generator->forward(gen_in, gen_out);
-//            softMax.forward(gen_out, sm_out);
-//
-//            /* Find max value of probability */
-//            int max_index = 
-//                std::max_element(sm_out.begin( ), sm_out.end( ))-sm_out.begin( );
-//            std::cout << "next word: " << max_index << std::endl;
-//
-//            /* Concatenate input */
-//            tgt_input.reshape(vector<int>{1, tgt_input.shape[1]+1});
-//            tgt_input[tgt_input.shape[1]-1] = max_index;
+            /* Generator and softmax */
+            Tensor<T> gen_out{ };
+            Tensor<T> sm_out{ };
+            generator->forward(gen_out, dec_out_fin);
+            std::cout << "gen_out " << gen_out << std::endl;
+            softMax.forward(sm_out, gen_out);
+            std::cout << "sm_out " << sm_out << std::endl;
+
+            /* Find max value of probability */
+            Tensor<T> max_indices{ };
+            max_tensor.forward(max_indices, sm_out);
+            std::cout << "max_indices " << max_indices << std::endl;
+
+            /* Set indices across the batch */
+            set_new_tgt_input(tgt_input, max_indices, i);
+            std::cout << "tgt_input " << tgt_input << std::endl;
         }
     }
 
@@ -211,8 +238,29 @@ public:
     }
 
 private:
+    void set_new_tgt_input(Tensor<T>& tgt_input, 
+            const Tensor<T>& max_indices, const int widx)
+    {
+        int new_len = tgt_input.shape[1]+1;
+        int num_input = tgt_input.shape[0];
+        Tensor<T> tmp_tgt_input(vector<int>{num_input, new_len});
+        for (int n=0; n<num_input; n++)
+        {
+            for (int j=0; j<tgt_input.shape[1]; j++)
+            {
+                tmp_tgt_input[n*new_len+j] = 
+                    tgt_input[n*tgt_input.shape[1]+j];
+            }
+
+            tmp_tgt_input[n*new_len+widx+1] = 
+                max_indices[n*max_indices.shape[1]+widx+1];
+        }
+        tgt_input = tmp_tgt_input;
+    }
+
     int voca_src_size;
     int voca_tgt_size;
+    int SENTENCE_LEN;
     Embedding<T>* embed_src = nullptr;
     Embedding<T>* embed_tgt = nullptr;
     Encoder<T> *encoder = nullptr;
@@ -221,6 +269,7 @@ private:
     LayerNorm<T>* ln_decoder = nullptr;
     Linear<T> *generator = nullptr;
     SoftMax<T> softMax;
+    MaxTensor<T> max_tensor;
 };
 }
 

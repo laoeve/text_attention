@@ -5,11 +5,12 @@
 #ifndef ATTENTION_TRANSFORMER_CPP_FEED_FORWARD_H
 #define ATTENTION_TRANSFORMER_CPP_FEED_FORWARD_H
 
+#include "bits/stdc++.h"
 #include "top_model.h"
+#include "functions.h"
 #include "layer.h"
 #include "tensor.h"
 #include "linear.h"
-#include "functions.h"
 
 using namespace std;
 
@@ -23,7 +24,7 @@ public:
             const string ff_hidden_str, const string ff_out_str)
     : Layer<T>(master)
     {
-        std::cout << ">>>> Init feedforward sublayer - " << std::endl;
+        std::cout << ">>>> Init feedForward sublayer - " << std::endl;
 
         /* Get weight parameters */
         string prefix_hidden = prefix_str+"."+ff_hidden_str;
@@ -57,16 +58,16 @@ public:
         delete linear_o;
     }
 
-    void forward(const Tensor <T> &input, Tensor <T> &output, 
+    void forward(Tensor <T> &output, const Tensor <T> &input, 
             const Tensor<bool> &/*mask*/, const Tensor<T> &memory) override 
     {
         Tensor<T> h2out{};
-        linear_h->forward(input, h2out);
+        linear_h->forward(h2out, input);
 
         for (int i=0; i<h2out.size( ); i++)
             h2out[i] = GELU(h2out[i]);
 
-        linear_o->forward(h2out, output);
+        linear_o->forward(output, h2out);
     }
 
     uint64_t parameterCount() override {

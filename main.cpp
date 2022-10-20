@@ -2,26 +2,19 @@
 // Created by dianh on 2021/04/16.
 //
 #include "bits/stdc++.h"
-#include <map>
-#include <vector>
-#include <string>
 #include <cassert>
 #include "model/top_model.h"
-#include "model/attention_transformer.h"
 #include "model/functions.h"
+
+//TODO: add header of models on the following line
+#include "model/attention_transformer.h"
 
 using namespace std;
 using namespace text_attention;
 typedef float data_t;
 
-void swap_tensor(Tensor<data_t>& swp_a, Tensor<data_t>& swp_b)
+int main(int argc, char* argv[]) 
 {
-    Tensor<data_t> swp_tmp = swp_b;
-    swp_b = swp_a;
-    swp_a = swp_tmp;
-}
-
-int main(int argc, char* argv[]) {
     /* Model arguments */
     string path_shape_input = "../sentence/shape.input";
     string path_value_input = "../sentence/value.input";
@@ -77,9 +70,6 @@ int main(int argc, char* argv[]) {
     map<int, string> voca_src = vocab_parsing(path_voca_src);
     map<int, string> voca_tgt = vocab_parsing(path_voca_tgt);
 
-    std::cout << "source dictionary size: " << voca_src.size( ) << std::endl;
-    std::cout << "target dictinoary size: " << voca_tgt.size( ) << std::endl;
-
     /* Init models */
     TopModel<data_t>* model = nullptr;
     if (model_arg=="transformer") 
@@ -124,6 +114,7 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
     std::cout << "Model initiailization complete" << std::endl;
+    param_map.clear( );
 
     /* Load input */
     get_param_shape(path_shape_input, input_idx);
@@ -134,9 +125,8 @@ int main(int argc, char* argv[]) {
     std::cout << "Input tensor dimension: " << input << std::endl;
 
     /* Run model */
-    model->forward(input, output);
+    model->forward(output, input);
 
-//    delete model;
     return 0;
 }
 

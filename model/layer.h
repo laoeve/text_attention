@@ -17,10 +17,10 @@ public:
     Layer( ) { }
     Layer(TopModel<T>* master) : master(master) { }
     virtual uint64_t parameterCount() = 0;
-    virtual void forward(const Tensor<T> &/*input*/, Tensor<T> &/*output*/) 
+    virtual void forward(Tensor<T> &/*output*/, const Tensor<T> &/*input*/) 
     {
     } 
-    virtual void forward(const Tensor<T> &/*input*/, Tensor<T> &/*output*/,
+    virtual void forward(Tensor<T> &/*output*/, const Tensor<T> &/*input*/, 
             const Tensor<bool> &/*mask*/, const Tensor<T> &/*memory*/) 
     {
     }
@@ -31,6 +31,7 @@ public:
     void matmul(Tensor<T>& out, const Tensor<T>& opa, 
             const Tensor<T>& opb, const T scale_factor)
     {
+#ifdef DEBUG
         if ((opa.get_dims( )==1 && opb.get_dims( )==1 && opb.shape[0]!=1) ||
             (opa.get_dims( )==2 && opa.shape[1]!=opb.shape[0]))
         {
@@ -40,6 +41,7 @@ public:
             assert(0);
             exit(1);
         }
+#endif
         
         /* Determine output shapes */
         int num_row = opa.shape[0];

@@ -31,76 +31,60 @@
  *
  */
 
-#ifndef _EMBEDDING_H_
-#define _EMBEDDING_H_
+#ifndef _MAX_TENSOR_H_
+#define _MAX_TENSOR_H_
 
-#include "bits/stdc++.h"
-#include "top_model.h"
-#include "tensor.h"
 #include "layer.h"
+#include "tensor.h"
 
 using namespace std;
-
-namespace text_attention 
+namespace text_attention
 {
 template<typename T>
-class Embedding : public Layer<T>
+class MaxTensor : virtual public Layer<T> 
 {
 public:
-    Embedding(string name, int dim_model, Tensor<T>& lut_em, Tensor<T>& lut_pe)
-    : name(name), dim_model(dim_model)
-    {
-        this->lut_em = &lut_em;
-        this->lut_pe = &lut_pe;
-    }
-
-    uint64_t parameterCount( ) override
-    {
-        return (lut_em->size( )+lut_pe->size( ));
-    }
-
-    ~Embedding( )
-    {
-        delete lut_em;
-        delete lut_pe;
-    }
-
-    void print_params( ) override
-    {
-        std::cout << "Init embedding " << name 
-            << " embeddingTable.shape=" << *lut_em
-            << " positionalEncoding.shape=" << *lut_pe << std::endl;
-    }
-
     void forward(Tensor<T>& output, const Tensor<T>& input) override
     {
-        /* Set shape */
-        std::vector<int> out_shape = input.shape;
-        out_shape.push_back(dim_model);
-        output.reshape(out_shape);
+        /* Extract shape information */
+        int num_input = 1;
+        int num_row = input.shape[0];
+        int num_col = input.shape[1];
+        uint64_t sz_outstack = 1;
+        vector<int> out_shape;
+        
+        if (input.get_dims( )==3)
+        {
+            num_input = input.shape[0];
+            num_row = input.shape[1];
+            num_col = input.shape[2];
+            out_shape = {num_input, num_row};
+            sz_outstack = num_row;
+        }
+        else
+            out_shape = {num_row, 1};
 
-        /* Set value */
-        int num_input = output.shape[0];
-        int len = output.shape[1];
+        /* Get max element from tensor */
+        output.reshape(out_shape);
         for (int n=0; n<num_input; n++)
         {
-            for (int idx=0; idx<len; idx++)
+            for (int i=0; i<num_row; i++)
             {
-                for (int ebd=0; ebd<dim_model; ebd++)
-                {
-                    output[n*len*dim_model+idx*dim_model+ebd] = 
-                        (*lut_em)[input[n*len+idx]*dim_model+ebd] *
-                        std::sqrt(dim_model) + (*lut_pe)[idx*dim_model+ebd];
-                }
+                uint64_t offset = n*num_row*num_col;
+                int max_index = 
+                    std::max_element(input.begin( )+offset+i*num_col,
+                            input.begin( )+offset+(i+1)*num_col) 
+                    - (input.begin( )+offset+i*num_col);
+                
+                output[n*sz_outstack+i] = max_index;
             }
         }
     }
 
-private:
-    Tensor<T>* lut_em; // embedding table
-    Tensor<T>* lut_pe; // positional encoding table
-    std::string name;
-    int dim_model;
+    uint64_t parameterCount() override 
+    {
+        return 0;
+    }
 };
 };
 
