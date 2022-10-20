@@ -8,10 +8,12 @@ Archived files (i.e., parameters, dictionary, input sentence) can be downaload a
 Build and run 
 -------------------------
 1. Get the code
+
         $ git clone <url>
         $ cd <PROJECT DIRECTORY>
 
 2. Download the above archived files and unzip in directory
+
         $ tar -xzvf attention_files.tar.gz
 
 3. Build the code
