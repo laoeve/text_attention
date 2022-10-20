@@ -37,7 +37,6 @@ public:
         {
             std::cerr << "Error: dimension error at "
                 << "matrix multiplication" << std::endl;
-            std::cerr << opa.get_dims( ) << " " << opb.get_dims( ) << " " << opa << " " << opb << std::endl;
             assert(0);
             exit(1);
         }

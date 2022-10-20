@@ -81,11 +81,13 @@ public:
         Tensor<T> tmp_in(input);
         int layer_num = 0;
         for (auto blockPtr: layers) {
+#ifdef DEBUG
             std::cout << "Forward pass of encoder[" << layer_num++ << "]" << std::endl;
-            
+#endif
+            layer_num = layer_num;
+
             blockPtr->forward(output, tmp_in, mask);
             tmp_in = output;
-            std::cout << output << std::endl;
         }
     }
 

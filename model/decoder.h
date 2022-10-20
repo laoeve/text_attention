@@ -86,11 +86,13 @@ public:
         int layer_num = 0;
         for (auto blockPtr: layers) 
         {
+#ifdef DEBUG
             std::cout << "Forward pass of decoder[" << layer_num++ << "]" << std::endl;
+#endif
+            layer_num = layer_num;
 
             blockPtr->forward(output, tmp_in, memory, tgt_mask, src_mask);
             tmp_in = output;
-            std::cout << output << std::endl;
         }
     }
 

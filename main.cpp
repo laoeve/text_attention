@@ -72,6 +72,7 @@ int main(int argc, char* argv[])
 
     /* Init models */
     TopModel<data_t>* model = nullptr;
+    std::cout << "Load model parameters..." << std::endl;
     if (model_arg=="transformer") 
     { 
         string path_shape = "../params/shape_transformer.param";
@@ -113,7 +114,7 @@ int main(int argc, char* argv[])
         assert(0);
         exit(1);
     }
-    std::cout << "Model initiailization complete" << std::endl;
+    std::cout << "Model initiailization completes!" << std::endl;
     param_map.clear( );
 
     /* Load input */
@@ -122,9 +123,10 @@ int main(int argc, char* argv[])
 
     Tensor<data_t> input(input_idx["src_idx"].pvals, input_idx["src_idx"].pshape);
     Tensor<data_t> output;
-    std::cout << "Input tensor dimension: " << input << std::endl;
+    std::cout << "Input tensor is loaded dimension: " << input << std::endl;
 
     /* Run model */
+    std::cout << "Run the constructed model" << std::endl;
     model->forward(output, input);
 
     return 0;

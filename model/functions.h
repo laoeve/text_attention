@@ -161,7 +161,6 @@ void tensor_print(Tensor <T> &input){
 
 std::map<int, std::string> vocab_parsing(std::string filename) 
 {
-    std::cout << "!Vocabulary Parsing : " << filename << "!" << std::endl;
     std::ifstream input;
     input.open(filename);
     const bool print_log = false;
@@ -193,8 +192,6 @@ std::map<int, std::string> vocab_parsing(std::string filename)
         }
     }
     input.close();
-
-    std::cout << "========================" << std::endl;
     return vocab;
 }
 

@@ -7,19 +7,25 @@ Archived files (i.e., parameters, dictionary, input sentence) can be downaload a
 
 Build and run 
 -------------------------
-1. Download the above archived files and unzip
+1. Get the code
+        $ git clone <url>
+        $ cd <PROJECT DIRECTORY>
 
-2. Build the code
+2. Download the above archived files and unzip in directory
+        $ tar -xzvf attention_files.tar.gz
+
+3. Build the code
 
         $ mkdir build
         $ cd build
         $ cmake ..
         $ make 
-        $ <binary> <YOUR OPTIONS>
+        $ <model binary> <YOUR OPTIONS>
+
+4. To run in release mode, please set CMAKE_BUILD_TYPE as "Release"
 
 Contributors
 -----------------------
 + Hyunjun Park     laoeve@capp.snu.ac.kr
 + Hyokeun Lee      hklee@capp.snu.ac.kr
-
 

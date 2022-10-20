@@ -151,6 +151,9 @@ public:
                 param_map[prefix_dec+"."+LN_out+"."+LN_beta_str].pvals);
         ln_decoder = new LayerNorm<T>(prefix_dec, dim_embed, *gamma, *beta);
 
+        ln_encoder->print_params( );
+        ln_decoder->print_params( );
+
         /* Init generator layer */
         Tensor<T>* gen_w = new Tensor<T>(
                 param_map[gen_str+"."+weight_str].pvals,
@@ -185,6 +188,9 @@ public:
         tgt_input[0] = 1; // <start of sentence>
         for (int i=0; i<SENTENCE_LEN-2; i++)
         {
+#ifdef DEBUG
+            std::cout << "Generating the word at " << i+1 << std::endl;
+#endif
             /* Setup target mask */
             Tensor<bool> enc_mask{};
             Tensor<bool> tgt_mask{};
