@@ -13,7 +13,6 @@
 #include "top_model.h"
 #include "tensor.h"
 #include "layer.h"
-//#include "patch_merging.h"
 #include "decoderLayer.h"
 
 using namespace std;
@@ -58,8 +57,12 @@ public:
             const Tensor<bool> &src_mask) { 
         Tensor<T> tmp_in(input);
         int layer_num = 0;
-        for (auto blockPtr: layers) {
+        for (auto blockPtr: layers) 
+        {
+#ifdef DEBUG
             std::cout << "Forward pass of decoder[" << layer_num++ << "]" << std::endl;
+#endif
+            layer_num = layer_num;
 
             blockPtr->forward(tmp_in, output, memory, tgt_mask, src_mask);
             tmp_in = output;

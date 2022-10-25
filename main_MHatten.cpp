@@ -10,12 +10,6 @@
 #include "model/attention_transformer.h"
 #include "model/functions.h"
 
-//TODO: add header of models on the following line
-#include "model/attention_transformer.h"
-#include "model/bert.h"
-#include "model/gpt2.h"
-#include "model/t5.h"
-
 using namespace std;
 using namespace text_attention;
 typedef float data_t;
@@ -33,10 +27,7 @@ int main(int argc, char* argv[]) {
     string path_value_input = "../sentence/value.input";
     string path_voca_src = "../dictionary/voca_de.dict";
     string path_voca_tgt = "../dictionary/voca_en.dict";
-    //string model_arg = "transformer";
-    //string model_arg = "bert-base";
-    //string model_arg = "bert-large";
-    string model_arg = "gpt2";
+    string model_arg = "bert-base";
 
     /* Parse argument */
     for (int i=0; i<argc; ) 
@@ -89,7 +80,7 @@ int main(int argc, char* argv[]) {
     std::cout << "source dictionary size: " << voca_src.size( ) << std::endl;
     std::cout << "target dictinoary size: " << voca_tgt.size( ) << std::endl;
 
-    /* Init models */
+    /* Init models *//**/
     TopModel<data_t>* model = nullptr;
     if (model_arg=="transformer") 
     { 
@@ -97,31 +88,35 @@ int main(int argc, char* argv[]) {
         string path_value = "../params/value_transformer.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
-        model = new AttentionTransformer<data_t>(voca_src.size( ), voca_tgt.size( ), model_arg);
+        model = new AttentionTransformer<data_t>(voca_src.size( ), voca_tgt.size( ));
     }
     else if (model_arg=="bert-base")
     {
-        string path_shape = "../params/shape_bert_base_uncased.param";
-        string path_value = "../params/value_bert_base_uncased.param";
+        //TODO
+        assert(0);
+        string path_shape = "../params/shape_bert-base.param";
+        string path_value = "../params/value_bert-base.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
-        model = new BERT<data_t>(voca_src.size( ), voca_tgt.size( ), model_arg);
+        model = new BERT_base<data_t>(voca_src.size( ), voca_tgt.size( ));
     }
     else if (model_arg=="bert-large")
     {
-        string path_shape = "../params/shape_bert_large_uncased.param";
-        string path_value = "../params/value_bert_large_uncased.param";
+        //TODO
+        assert(0);
+        string path_shape = "../params/shape_bert-large.param";
+        string path_value = "../params/value_bert-large.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
-        model = new BERT<data_t>(voca_src.size( ), voca_tgt.size( ), model_arg);
     }
     else if (model_arg=="gpt2")
     {
+        //TODO
+        assert(0);
         string path_shape = "../params/shape_gpt2.param";
         string path_value = "../params/value_gpt2.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
-        model = new GPT2<data_t>(voca_src.size( ), voca_tgt.size( ), model_arg);
     }
     else
     {
@@ -140,9 +135,9 @@ int main(int argc, char* argv[]) {
     std::cout << "Input tensor dimension: " << input << std::endl;
 
     /* Run model */
-    // model->forward(input, output);
+    model->forward(input, output);
 
-    // delete model;
+    delete model;
     return 0;
 }
 

@@ -1,12 +1,40 @@
-//
-// Created by dianh on 2021/04/16.
-//
-// Modified by hjpark
-// based from swin_block.h
+/*
+ * Copyright (c) 2022 Computer Architecture and Paralllel Processing Lab, 
+ * Seoul National University, Republic of Korea. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     1. Redistribution of source code must retain the above copyright 
+ *        notice, this list of conditions and the follwoing disclaimer.
+ *     2. Redistributions in binary form must reproduce the above copyright 
+ *        notice, this list conditions and the following disclaimer in the 
+ *        documentation and/or other materials provided with the distirubtion.
+ *     3. Neither the name of the copyright holders nor the name of its 
+ *        contributors may be used to endorse or promote products derived from 
+ *        this software without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: 
+ * Hyokeun Lee (hklee@capp.snu.ac.kr)
+ * Hyunjun Park (laoeve@capp.snu.ac.kr)
+ *
+ */
 
-#ifndef ATTENTION_TRANSFORMER_CPP_ENCODER_LAYER_H
-#define ATTENTION_TRANSFORMER_CPP_ENCODER_LAYER_H
+#ifndef ATTENTION_TRANSFORMER_CPP_DECODER_LAYER_GPT2_H
+#define ATTENTION_TRANSFORMER_CPP_DECODER_LAYER_GPT2_H
 
+#include "bits/stdc++.h"
 #include "top_model.h"
 #include "layer.h"
 #include "residual.h"
@@ -18,10 +46,10 @@ using namespace std;
 
 namespace text_attention {
 template<typename T>
-class EncoderLayer : virtual public Layer<T> {
+class DecoderLayer_GPT2 : virtual public Layer<T> {
 public:
-    EncoderLayer(TopModel<T>* master,
-            int dim_model, int num_heads, int dim_ff, const string prefix_enc, 
+    DecoderLayer_GPT2(TopModel<T>* master,
+            int dim_model, int num_heads, int dim_ff, const string prefix_dec, 
             const string prefix_layer, int id, const string weight_str, 
             const string bias_str, const string LN_gamma_str, 
             const string LN_beta_str, const string sa_query_str, 
@@ -30,8 +58,8 @@ public:
             const string ff_out_str, const string LN_mh_str, const string LN_ff_str) 
     : Layer<T>(master)
     {
-        string prefix_str = prefix_enc+"."+prefix_layer+"."+to_string(id);
-        std::cout << "Init encoder - " << prefix_str << std::endl;
+        string prefix_str = prefix_dec+"."+to_string(id);
+        std::cout << "Init decoder - " << prefix_str << std::endl;
         
         /* Init attention layer */
         multiheadAttention = new MultiheadAttention<T>(master, 
@@ -75,7 +103,7 @@ public:
         return ret;
     }
 
-    ~EncoderLayer() {
+    ~DecoderLayer_GPT2() {
         delete multiheadAttention;
         delete feedForward;
         delete postNorm_mh;
@@ -84,10 +112,11 @@ public:
         delete residual_ff;
     }
 
-    void forward(const Tensor<T> &input, Tensor<T> &output, const Tensor<bool> &mask) {
+    void forward(Tensor<T> &output, const Tensor<T> &input, const Tensor<bool> &mask) 
+    {
         Tensor<T> mh2ff{};
-        residual_mh->forward(input, mh2ff, mask, blank_mem);
-        residual_ff->forward(mh2ff, output, blank_mask, blank_mem);
+        residual_mh->forward(mh2ff, input, mask, blank_mem);
+        residual_ff->forward(output, mh2ff, blank_mask, blank_mem);
     }
 
 private:
@@ -101,4 +130,4 @@ private:
     Tensor<T> blank_mem {};
 };
 }
-#endif //ATTENTION_TRANSFORMER_CPP_ENCODER_LAYER_H
+#endif //ATTENTION_TRANSFORMER_CPP_DECODER_LAYER_GPT2_H

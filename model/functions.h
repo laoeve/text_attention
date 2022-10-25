@@ -106,63 +106,8 @@ Tensor <T> *create_mask(int windowSize, int displacement,
     return ret;
 }
 
-/*     std::map<int, std::vector<float> > sentence_parsing(std::string filename) {
-    std::cout << "Vocabulary Parsing : " << filename << std::endl;
-    std::ifstream input;
-    input.open(filename);
-    const bool print_log = false;
-    const std::regex re(", ");
-    
-    std::string line;
-    std::map<int, std::vector<float> > sentence;
-    std::vector<float> tensor_return;
-    int cell_num=0;
-    int sentence_num=0;
-
-    while(input.peek() != EOF) {
-        std::getline(input, line);
-        std::vector<std::string> tokenized(
-        std::sregex_token_iterator(line.begin(), line.end(), re, -1),
-        std::sregex_token_iterator()
-        );
-        if(print_log == true){
-            std::cout << "tokenizing : " << line << " with " << tokenized.size() << std::endl;
-            std::cout << tokenized[0] << tokenized[2] << std::endl;
-        }
-        for(int i=1; i<tokenized.size() ; i++){
-            tensor_return.push_back(std::stod(tokenized[i]));
-        }
-
-        sentence.insert( std::pair< int, std::vector<float> >(((sentence_num*128)+stoi(tokenized.at(0))), tensor_return) );      
-        if(stoi(tokenized.at(0)) == 127){
-            sentence_num += 1;
-        }
-        tensor_return.clear();
-    }
-
-    input.close();
-    return sentence;
-}   */
-//    std::map<int, std::vector<float> > sentence_embed = text_attention::sentence_parsing("../sentence.csv");
-
-/*     template<typename T>
-void tensor_print(Tensor <T> &input){
-    std::cout << "Tensor Shape : ";
-    for(int i=0; i < input.shape.size() ; ++i){std::cout << "[" << input.shape[i] << "]"};
-    std::cout << std::endl;
-
-    std::cout << "Tensor Element : ";
-    for(int i=0; i < input.shape.size() ; ++i){
-        std::cout << "Dim" << i+1 << " : "
-        for(int j=0; j < input.shape[i] ; ++j){
-            std::cout << input[i*input.shape[i]]
-        }
-    }
-} */
-
 std::map<int, std::string> vocab_parsing(std::string filename) 
 {
-    std::cout << "!Vocabulary Parsing : " << filename << "!" << std::endl;
     std::ifstream input;
     input.open(filename);
     const bool print_log = false;
@@ -185,7 +130,7 @@ std::map<int, std::string> vocab_parsing(std::string filename)
         while(regex_search(line, m, re)){
             vocab.insert(std::pair<int, std::string>(stoi(m[2]), m[1]));
             vocab_num+=1;
-            if(print_log == true){
+            if (print_log == true){
                 for(size_t i=0; i < m.size(); i++){
                     std::cout << m[i] << " at " << vocab_num << std::endl;
                 }
@@ -289,8 +234,8 @@ void get_param_value(std::string fpath, std::map<std::string, pinfo_t> &target_m
         if (target_map.count(tmp_name)==1)
         {
             pname = tmp_name;
+            pvals.clear();
 //            cout << "Start getting parameters of: " << pname << endl;
-            continue;
         }
 
         /* Get weight params */
@@ -313,7 +258,14 @@ void get_param_value(std::string fpath, std::map<std::string, pinfo_t> &target_m
         const std::string brk_head = "[";
         const std::string brk_tail = "]";
 
-        int pos = pvals.find(whead);
+        int pos;
+
+        while(pvals.find(pname)==0)
+        {
+            pos = pvals.find(pname); //if find(pname) == npos > then skip;
+            pvals = pvals.replace(pos, pname.length(), ""); // for duplicated parsing name
+        }
+        pos = pvals.find(whead);
         pvals = pvals.replace(pos, whead.length(), "");
         pos = pvals.find(wtail);
         pvals = pvals.replace(pos, wtail.length(), "");
@@ -347,8 +299,8 @@ void get_param_value(std::string fpath, std::map<std::string, pinfo_t> &target_m
         /* Insert parameters */
         target_map[pname].pvals = vvec;
 
-//        cout << "Finish getting parameters of : " 
-//            << pname << " " << target_map[pname].pvals.size( ) << endl;
+        cout << "Finish getting parameters of : " 
+            << pname << " " << target_map[pname].pvals.size( ) << endl;
     
         pname = "";
         pvals = "";
@@ -356,19 +308,6 @@ void get_param_value(std::string fpath, std::map<std::string, pinfo_t> &target_m
     
     fstream.close( );
 }
-
-/*     std::vector<std::string> find_map_key(std::string keyword, std::map<std::string, pinfo_t> &target_map){
-            std::vector<std::string> plist;
-    for(std::map<std::string, pinfo_t>::iterator it=target_map.begin(); it != target_map.end() ; it++){
-        if(it->first.find(keyword) != std::string::npos)
-            plist.push_back(it->first);
-    }
-    return plist;
-}
-
-map<std::string, pinfo_t> find_key_iter(std::string prefix, map<std::string, pinfo_t> &target_map){
-    return map<std::string,std::string>::const_iterator m = target_map.lower_bound(prefix);
-} */
 
 }
 

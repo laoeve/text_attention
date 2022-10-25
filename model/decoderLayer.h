@@ -11,6 +11,7 @@
 #include "layer.h"
 #include "residual.h"
 #include "layer_norm.h"
+#include "post_norm.h"
 #include "multiheadattention.h"
 #include "feed_forward.h"
 
@@ -50,17 +51,17 @@ public:
                 prefix_str, weight_str, bias_str, ff_hidden_str, ff_out_str);
 
         /* Init layer normalizations */
-        preNorm_mmh = new PreNorm<T>(master, maskedMultiheadAttention, 
+        postNorm_mmh = new PostNorm<T>(master, maskedMultiheadAttention, 
                 dim_model, prefix_str+"."+LN_mmh_str, LN_gamma_str, LN_beta_str);
-        residual_mmh = new Residual<T>(preNorm_mmh);
+        residual_mmh = new Residual<T>(postNorm_mmh);
         
-        preNorm_mh = new PreNorm<T>(master, multiheadAttention, 
+        postNorm_mh = new PostNorm<T>(master, multiheadAttention, 
                 dim_model, prefix_str+"."+LN_mh_str, LN_gamma_str, LN_beta_str);
-        residual_mh = new Residual<T>(preNorm_mh);
+        residual_mh = new Residual<T>(postNorm_mh);
         
-        preNorm_ff = new PreNorm<T>(master, positionwisefeedForward, 
+        postNorm_ff = new PostNorm<T>(master, positionwisefeedForward, 
                 dim_model, prefix_str+"."+LN_ff_str, LN_gamma_str, LN_beta_str);
-        residual_ff = new Residual<T>(preNorm_ff);
+        residual_ff = new Residual<T>(postNorm_ff);
     }
 
     uint64_t parameterCount() override {
@@ -74,14 +75,14 @@ public:
         if (positionwisefeedForward) {
             ret += positionwisefeedForward->parameterCount();
         }
-        if (preNorm_mmh) {
-            ret += preNorm_mmh->parameterCount();
+        if (postNorm_mmh) {
+            ret += postNorm_mmh->parameterCount();
         }
-        if (preNorm_mh) {
-            ret += preNorm_mh->parameterCount();
+        if (postNorm_mh) {
+            ret += postNorm_mh->parameterCount();
         }
-        if (preNorm_ff) {
-            ret += preNorm_ff->parameterCount();
+        if (postNorm_ff) {
+            ret += postNorm_ff->parameterCount();
         }            
         if (residual_mmh) {
             ret += residual_mmh->parameterCount();
@@ -99,9 +100,9 @@ public:
         delete maskedMultiheadAttention;
         delete multiheadAttention;
         delete positionwisefeedForward;
-        delete preNorm_mmh;
-        delete preNorm_mh;
-        delete preNorm_ff;
+        delete postNorm_mmh;
+        delete postNorm_mh;
+        delete postNorm_ff;
         delete residual_mmh;
         delete residual_mh;
         delete residual_ff;
@@ -121,9 +122,9 @@ private:
     MultiheadAttention<T> *maskedMultiheadAttention = nullptr;
     MultiheadAttention<T> *multiheadAttention = nullptr;
     FeedForward<T> *positionwisefeedForward = nullptr;
-    PreNorm<T> *preNorm_mmh = nullptr;
-    PreNorm<T> *preNorm_mh = nullptr;
-    PreNorm<T> *preNorm_ff = nullptr;
+    PostNorm<T> *postNorm_mmh = nullptr;
+    PostNorm<T> *postNorm_mh = nullptr;
+    PostNorm<T> *postNorm_ff = nullptr;
     Residual<T> *residual_mmh = nullptr;
     Residual<T> *residual_mh = nullptr;
     Residual<T> *residual_ff = nullptr;
