@@ -31,8 +31,8 @@
  *
  */
 
-#ifndef ATTENTION_TRANSFORMER_CPP_ATTENTION_TRANSFORMER_H
-#define ATTENTION_TRANSFORMER_CPP_ATTENTION_TRANSFORMER_H
+#ifndef ATTENTION_TRANSFORMER_CPP_T5_H
+#define ATTENTION_TRANSFORMER_CPP_T5_H
 
 #include <bits/stdc++.h>
 
@@ -51,11 +51,11 @@ using namespace std;
 
 namespace text_attention {
 template<typename T>
-class AttentionTransformer : virtual public TopModel<T> 
+class T5 : virtual public TopModel<T> 
 {
 public:
-    AttentionTransformer(int voca_src_size, int voca_tgt_size)
-    : voca_src_size(voca_src_size),voca_tgt_size(voca_tgt_size)
+    T5(int voca_src_size, int voca_tgt_size, string model_arg)
+    : voca_src_size(voca_src_size),voca_tgt_size(voca_tgt_size),model_arg(model_arg)
     {
         /* Template */
         SENTENCE_LEN = 128;
@@ -70,57 +70,51 @@ public:
 
         const string prefix_enc = "encoder";
         const string prefix_dec = "decoder";
-        const string prefix_layer = "layers";
+        const string prefix_layer = "block";
         const string weight_str = "weight";
-        const string bias_str = "bias";
+        const string bias_str = "";
 
-        const string sa_query_str = "self_attn.linears.0"; // self-attention
-        const string sa_key_str = "self_attn.linears.1";
-        const string sa_value_str = "self_attn.linears.2";
-        const string sa_out_str = "self_attn.linears.3";
-        const string eda_query_str = "src_attn.linears.0"; // enc-dec attention
-        const string eda_key_str = "src_attn.linears.1";
-        const string eda_value_str = "src_attn.linears.2";
-        const string eda_out_str = "src_attn.linears.3";
+        const string sa_query_str = "layer.0.SelfAttention.q"; // self-attention
+        const string sa_key_str = "layer.0.SelfAttention.k";
+        const string sa_value_str = "layer.0.SelfAttention.v";
+        const string sa_out_str = "layer.0.SelfAttention.o";
+        const string eda_query_str = "layer.1.EncDecAttention.q"; // enc-dec attention
+        const string eda_key_str = "layer.1.EncDecAttention.k";
+        const string eda_value_str = "layer.1.EncDecAttention.v";
+        const string eda_out_str = "layer.1.EncDecAttention.o";
 
-        const string ff_hidden_str = "feed_forward.w_1";
-        const string ff_out_str = "feed_forward.w_2";
+        const string ff_hidden_str = "layer.1.DenseReluDense.wi.weight";
+        const string ff_out_str = "layer.1.DenseReluDense.wo.weight";
 
-        const string LN_mh_str = "sublayer.0.norm";
-        const string LN_ff_str = "sublayer.1.norm";
-        const string LN_dec_mmh_str = "sublayer.0.norm";
-        const string LN_dec_mh_str = "sublayer.1.norm";
-        const string LN_dec_ff_str = "sublayer.2.norm";
-        const string LN_out = "norm";
-        const string LN_gamma_str = "a_2";
-        const string LN_beta_str = "b_2";
+        const string LN_mh_str = "layer.0.layer_norm";
+        const string LN_ff_str = "layer.1.layer_norm";
+        const string LN_dec_mmh_str = "layer.0.layer_norm";
+        const string LN_dec_mh_str = "layer.1.layer_norm";
+        const string LN_dec_ff_str = "layer.2.layer_norm";
+        const string LN_out = "final_layer_norm";
+        const string LN_gamma_str = "weight";
+        const string LN_beta_str = "";
 
-        const string prefix_em_src = "src_embed";
-        const string prefix_em_tgt = "tgt_embed";
-        const string em_str = "0.lut.weight";
-        const string pe_str = "1.pe";
-        const string gen_str = "generator.proj";
+        const string prefix_em_src = "encoder.embed_tokens";
+        const string prefix_em_tgt = "decoder.embed_tokens";
+        const string em_str = "weight";
+        const string pe_str = "";
+        const string gen_str = "lm_head";
 
         /* Init embedding layers */
         Tensor<T>* lut_em_src = new Tensor<T>(
                 param_map[prefix_em_src+"."+em_str].pvals,
                 param_map[prefix_em_src+"."+em_str].pshape);
-        Tensor<T>* lut_pe_src = new Tensor<T>(
-                param_map[prefix_em_src+"."+pe_str].pvals,
-                param_map[prefix_em_src+"."+pe_str].pshape);
 
         embed_src = new Embedding<T>(prefix_em_src, dim_embed,
-                *lut_em_src, *lut_pe_src);
+                *lut_em_src, blank_tensor);
 
         Tensor<T>* lut_em_tgt = new Tensor<T>(
                 param_map[prefix_em_tgt+"."+em_str].pvals,
                 param_map[prefix_em_tgt+"."+em_str].pshape);
-        Tensor<T>* lut_pe_tgt = new Tensor<T>(
-                param_map[prefix_em_tgt+"."+pe_str].pvals,
-                param_map[prefix_em_tgt+"."+pe_str].pshape);
 
         embed_tgt = new Embedding<T>(prefix_em_tgt, dim_embed,
-                *lut_em_tgt, *lut_pe_tgt);
+                *lut_em_tgt, blank_tensor);
 
         embed_src->print_params( );
         embed_tgt->print_params( );
@@ -155,9 +149,7 @@ public:
         Tensor<T>* gen_w = new Tensor<T>(
                 param_map[gen_str+"."+weight_str].pvals,
                 param_map[gen_str+"."+weight_str].pshape);
-        Tensor<T>* gen_b = new Tensor<T>(
-                param_map[gen_str+"."+weight_str].pvals,
-                param_map[gen_str+"."+weight_str].pshape);
+        Tensor<T>* gen_b = nullptr;
 
         generator = new Linear<T>(gen_str, dim_embed, 
                 voca_tgt_size, *gen_w, *gen_b);
@@ -185,6 +177,9 @@ public:
         tgt_input[0] = 1; // <start of sentence>
         for (int i=0; i<SENTENCE_LEN-2; i++)
         {
+#ifdef DEBUG
+            std::cout << "Generating the word at " << i+1 << std::endl;
+#endif
             /* Setup target mask */
             Tensor<bool> enc_mask{};
             Tensor<bool> tgt_mask{};
@@ -244,6 +239,7 @@ private:
     int voca_src_size;
     int voca_tgt_size;
     int SENTENCE_LEN;
+    string model_arg;
     Embedding<T>* embed_src = nullptr;
     Embedding<T>* embed_tgt = nullptr;
     Encoder<T> *encoder = nullptr;
@@ -253,7 +249,8 @@ private:
     Linear<T> *generator = nullptr;
     SoftMax<T> softMax;
     MaxTensor<T> max_tensor;
+    Tensor<T> blank_tensor {};
 };
 }
 
-#endif //ATTENTION_TRANSFORMER_CPP_ATTENTION_TRANSFORMER_H
+#endif //ATTENTION_TRANSFORMER_CPP_T5_H

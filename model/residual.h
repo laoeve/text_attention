@@ -13,23 +13,22 @@ namespace text_attention {
 template<typename T>
 class Residual : virtual public Layer<T> {
 public:
-    Residual() : fn(nullptr) {
-    }
+    Residual() : fn(nullptr) { }
 
-    explicit Residual(Layer<T> *fn) : fn(fn) {
-    }
+    explicit Residual(Layer<T> *fn) : fn(fn) { }
 
-    uint64_t parameterCount() override {
-        if (fn != nullptr) {
+    uint64_t parameterCount() override 
+    {
+        if (fn != nullptr) 
             return fn->parameterCount();
-        }
         return 0;
     }
 
-    void forward(const Tensor<T> &input, Tensor<T> &output, 
-            const Tensor<bool> &mask, const Tensor<T> &memory) override {
+    void forward(Tensor<T> &output, const Tensor<T> &input, 
+            const Tensor<bool> &mask, const Tensor<T> &memory) override 
+    {
         assert(fn != nullptr);
-        fn->forward(input, output, mask, memory);
+        fn->forward(output, input, mask, memory);
 
         /* Residual connection */
         for (int i = 0; i < output.size(); ++i) 

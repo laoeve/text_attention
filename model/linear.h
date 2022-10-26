@@ -23,12 +23,11 @@ public:
 
         if (weights->shape[0]==out_feature && 
                 weights->shape[1]==in_feature)
-            need_wtranspose = true;
-        else
-            need_wtranspose = false;
+            weights->transpose( );
     }
 
-    uint64_t parameterCount() override {
+    uint64_t parameterCount() override 
+    {
         return weights->size() + bias->size();
     }
 
@@ -44,7 +43,7 @@ public:
             << " bias.shape=" << *bias << std::endl;
     }
 
-    void forward(const Tensor <T> &input, Tensor <T> &output) override 
+    void forward(Tensor <T> &output, const Tensor <T> &input) override 
     {
         if (is_operable(input)==false)
         {
@@ -53,16 +52,12 @@ public:
             exit(1);
         }
 
-        /* Transpose */
-        if (need_wtranspose)
-            weights->transpose( );
-
-        /* Multiplication */
+        /* Vector-matrix multiplication */
         multiply(input, output);
     }
 
 private:
-    //TODO: optimize in future as another function if possible
+    //TODO: optimize in future if possible
     void multiply(const Tensor<T>& input, Tensor<T>& output)
     {
         /* Determine shapes of operators */
@@ -94,12 +89,19 @@ private:
             {
                 for (int j=0; j<out_feature; j++)
                 {
-                    output[n*sz_outstack+i*out_feature+j] += (*bias)[j];
+                    if(bias->is_void( ))
+                    {
+                        output[n*sz_outstack+i*out_feature+j] = 1.;
+                    }
+                    else
+                    {
+                        output[n*sz_outstack+i*out_feature+j] += (*bias)[j];
+                    }
                     for (int k=0; k<in_feature; k++)
                     {
                         output[n*sz_outstack+i*out_feature+j] +=
-                            (*weights)[k*out_feature+j]*
-                            input[n*sz_instack+i*in_feature+k];
+                            input[n*sz_instack+i*in_feature+k]*
+                            (*weights)[k*out_feature+j];
                     }
                 }
             }
@@ -129,7 +131,8 @@ private:
     std::string name;
     int in_feature;
     int out_feature;
-    bool need_wtranspose;
+    Tensor<T> blank_mem {};
+
 };
 }
 #endif //ATTENTION_TRANSFORMER_CPP_LINEAR_H

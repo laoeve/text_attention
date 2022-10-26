@@ -82,8 +82,8 @@ public:
         const string eda_value_str = "";
         const string eda_out_str = "";
 
-        const string ff_hidden_str = "mlp";
-        const string ff_out_str = "mlp";
+        const string ff_hidden_str = "mlp.c_fc";
+        const string ff_out_str = "mlp.c_proj";
 
         const string LN_mh_str = "ln_1";
         const string LN_ff_str = "ln_2";

@@ -31,71 +31,59 @@
  *
  */
 
-#ifndef _TOP_MODEL_H_
-#define _TOP_MODEL_H_
+#ifndef _MAX_TENSOR_H_
+#define _MAX_TENSOR_H_
 
-#include <bits/stdc++.h>
+#include "layer.h"
 #include "tensor.h"
 
 using namespace std;
-
-namespace text_attention {
+namespace text_attention
+{
 template<typename T>
-class TopModel 
+class MaxTensor : virtual public Layer<T> 
 {
 public:
-    int num_layers;
-    int dim_embed;
-    int num_heads;
-    int dim_ff;
-
-    virtual void forward(Tensor<T>& output, const Tensor<T>& input) = 0;
-
-    /*
-     * Dimension will be [BATCH SIZE x Q_LEN x K LEN] 
-     */
-    void set_pad_mask(Tensor<bool>& mask, 
-            const Tensor<T>& seq_q, const Tensor<T>& seq_k)
+    void forward(Tensor<T>& output, const Tensor<T>& input) override
     {
-        assert(seq_q.get_dims( )==2 && seq_k.get_dims( )==2);
-        assert(seq_q.shape[0]==seq_k.shape[0]); // same batch size
-        vector<int> mask_shape{seq_q.shape[0], seq_q.shape[1], seq_k.shape[1]};
-        mask.reshape(mask_shape);
-
-        uint64_t sz_stack = mask.shape[1]*mask.shape[2];
-        for (int n=0; n<mask.shape[0]; n++)
+        /* Extract shape information */
+        int num_input = 1;
+        int num_row = input.shape[0];
+        int num_col = input.shape[1];
+        uint64_t sz_outstack = 1;
+        vector<int> out_shape;
+        
+        if (input.get_dims( )==3)
         {
-            for (int i=0; i<mask.shape[1]; i++)
+            num_input = input.shape[0];
+            num_row = input.shape[1];
+            num_col = input.shape[2];
+            out_shape = {num_input, num_row};
+            sz_outstack = num_row;
+        }
+        else
+            out_shape = {num_row, 1};
+
+        /* Get max element from tensor */
+        output.reshape(out_shape);
+        for (int n=0; n<num_input; n++)
+        {
+            for (int i=0; i<num_row; i++)
             {
-                for (int j=0; j<mask.shape[2]; j++)
-                {
-                    if (seq_k[n*mask.shape[2]+j]==2)
-                        mask[n*sz_stack+i*mask.shape[2]+j] = false;
-                    else
-                        mask[n*sz_stack+i*mask.shape[2]+j] = true;
-                }
+                uint64_t offset = n*num_row*num_col;
+                int max_index = 
+                    std::max_element(input.begin( )+offset+i*num_col,
+                            input.begin( )+offset+(i+1)*num_col) 
+                    - (input.begin( )+offset+i*num_col);
+                
+                output[n*sz_outstack+i] = max_index;
             }
         }
     }
 
-    void set_dec_mask(Tensor<bool>& mask, const Tensor<T>& input)
+    uint64_t parameterCount() override 
     {
-        /* 
-         * Note: dimension of 2 is to distinguish source & target masks 
-         * Dimension will be [SENTENCE LEN SENTENCE LEN]
-         * */
-        vector<int> mask_shape{(int)input.size( ), (int)input.size( )};
-        mask.reshape(mask_shape);
-        for (int i=0; i<input.size( ); i++)
-        {
-            for (int j=0; j<input.size( ); j++)
-            {
-                if (i>=j)
-                    mask[i*input.size( )+j] = true;
-                else
-                    mask[i*input.size( )+j] = false;
-            }
-        }
+        return 0;
     }
 };
 };

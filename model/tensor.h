@@ -22,9 +22,12 @@ public:
         *this = in_tensor;
     }
 
-    Tensor(const std::vector<T>& values, const std::vector<int>& shape)
-    : shape(shape)
+    Tensor(const std::vector<T>& values, const std::vector<int>& shape_)
+    : shape(shape_)
     {
+        if (shape.size( )==1)
+            shape.push_back(1);
+
         uint64_t mult = 1;
         for (int i=0; i<shape.size( );i++)
             mult *= shape[i];
@@ -46,6 +49,9 @@ public:
             typename std::vector<T>::iterator lastIt)
     : shape(shape_)
     {
+        if (shape.size( )==1)
+            shape.push_back(1);
+
         uint64_t mult = 1;
         for (int i=0; i<shape.size( );i++)
             mult *= shape[i];
@@ -64,10 +70,14 @@ public:
 
     Tensor(const std::vector<int> shape_) : shape(shape_)
     {
+        if (shape.size( )==1)
+            shape.push_back(1);
+
         uint64_t mult = 1;
         for (int i=0; i<shape.size( );i++)
             mult *= shape[i];
         this->resize(mult);
+        std::fill(this->begin( ), this->end( ), 0);
     }
 
     Tensor(int size, T default_data) : std::vector<T>(size, default_data) 
@@ -81,6 +91,9 @@ public:
             typename std::vector<T>::iterator lastIt) 
     {
         shape = shape_;
+        if (shape.size( )==1)
+            shape.push_back(1);
+
         uint64_t mult = 1;
         for (int i=0; i<shape.size( );i++)
             mult *= shape[i];
@@ -100,6 +113,9 @@ public:
     void reshape(const std::vector<int> new_shape)
     {
         shape = new_shape;
+        if (shape.size( )==1)
+            shape.push_back(1);
+
         uint64_t mult = 1;
         for (int i=0; i<new_shape.size( );i++)
             mult *= new_shape[i];
@@ -128,15 +144,6 @@ public:
         }
         else if (shape.size( )==2)
         {
-            /* Vector */
-            if (shape[0]==1) 
-            {
-                int tmp_s = shape[1];
-                shape.resize(1);
-                shape[0] = tmp_s;
-                return;
-            }
-
             /* 2D tensor*/
             std::vector<T>& vec = *this;
             std::vector<T> tmp_v(shape[0]*shape[1]);
@@ -154,6 +161,29 @@ public:
             int tmp_s = shape[0];
             shape[0] = shape[1];
             shape[1] = tmp_s;
+        }
+        else if (shape.size( )==3)
+        {
+            /* Batch transpose (1st dimension is batch size) */
+            std::vector<T>& vec = *this;
+            std::vector<T> tmp_v(shape[0]*shape[1]*shape[2]);
+
+            for (int n=0; n<shape[0]; n++)
+            {
+                for (int i=0; i<shape[1]; i++)
+                {
+                    for (int j=0; j<shape[2]; j++)
+                        tmp_v[n*shape[1]*shape[2]+j*shape[1]+i] = 
+                            vec[n*shape[1]*shape[2]+i*shape[2]+j];
+                }
+            }
+
+            for (int i=0; i<shape[0]*shape[1]*shape[2]; i++)
+                vec[i] = tmp_v[i];
+
+            int tmp_s = shape[1];
+            shape[1] = shape[2];
+            shape[2] = tmp_s;
         }
         else 
         {

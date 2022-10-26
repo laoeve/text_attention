@@ -1,8 +1,35 @@
-//
-// Created by dianh on 2021/04/16.
-//
-// Modified by hjpark
-// swin_transformer.h
+/*
+ * Copyright (c) 2022 Computer Architecture and Paralllel Processing Lab, 
+ * Seoul National University, Republic of Korea. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     1. Redistribution of source code must retain the above copyright 
+ *        notice, this list of conditions and the follwoing disclaimer.
+ *     2. Redistributions in binary form must reproduce the above copyright 
+ *        notice, this list conditions and the following disclaimer in the 
+ *        documentation and/or other materials provided with the distirubtion.
+ *     3. Neither the name of the copyright holders nor the name of its 
+ *        contributors may be used to endorse or promote products derived from 
+ *        this software without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: 
+ * Hyokeun Lee (hklee@capp.snu.ac.kr)
+ * Hyunjun Park (laoeve@capp.snu.ac.kr)
+ *
+ */
 
 #ifndef ATTENTION_TRANSFORMER_CPP_ATTENTION_TRANSFORMER_H
 #define ATTENTION_TRANSFORMER_CPP_ATTENTION_TRANSFORMER_H
@@ -18,6 +45,7 @@
 #include "layer_norm.h"
 #include "softmax.h"
 #include "linear.h"
+#include "max_tensor.h"
 
 using namespace std;
 
@@ -29,7 +57,8 @@ public:
     AttentionTransformer(int voca_src_size, int voca_tgt_size, string model_arg)
     : voca_src_size(voca_src_size),voca_tgt_size(voca_tgt_size),model_arg(model_arg)
     {
-        /* Template: string keys */
+        /* Template */
+        SENTENCE_LEN = 128;
         TopModel<T>::num_layers = 6;
         TopModel<T>::dim_embed = 512;
         TopModel<T>::num_heads = 8;
@@ -62,6 +91,7 @@ public:
         const string LN_dec_mmh_str = "sublayer.0.norm";
         const string LN_dec_mh_str = "sublayer.1.norm";
         const string LN_dec_ff_str = "sublayer.2.norm";
+        const string LN_out = "norm";
         const string LN_gamma_str = "a_2";
         const string LN_beta_str = "b_2";
 
@@ -109,13 +139,20 @@ public:
                 ff_hidden_str, ff_out_str, 
                 LN_dec_mmh_str, LN_dec_mh_str, LN_dec_ff_str);
 
-        vector<T>* gamma = new vector<T>(param_map[prefix_enc+"."+LN_gamma_str].pvals);
-        vector<T>* beta = new vector<T>(param_map[prefix_enc+"."+LN_beta_str].pvals);
+        vector<T>* gamma = new vector<T>(
+                param_map[prefix_enc+"."+LN_out+"."+LN_gamma_str].pvals);
+        vector<T>* beta = new vector<T>(
+                param_map[prefix_enc+"."+LN_out+"."+LN_beta_str].pvals);
         ln_encoder = new LayerNorm<T>(prefix_enc, dim_embed, *gamma, *beta);
 
-        gamma = new vector<T>(param_map[prefix_dec+"."+LN_gamma_str].pvals);
-        beta = new vector<T>(param_map[prefix_dec+"."+LN_beta_str].pvals);
+        gamma = new vector<T>(
+                param_map[prefix_dec+"."+LN_out+"."+LN_gamma_str].pvals);
+        beta = new vector<T>(
+                param_map[prefix_dec+"."+LN_out+"."+LN_beta_str].pvals);
         ln_decoder = new LayerNorm<T>(prefix_dec, dim_embed, *gamma, *beta);
+
+        ln_encoder->print_params( );
+        ln_decoder->print_params( );
 
         /* Init generator layer */
         Tensor<T>* gen_w = new Tensor<T>(
@@ -131,7 +168,7 @@ public:
         generator->print_params( );
     }
 
-    void forward(const Tensor<T> &input, Tensor<T> &output) override 
+    void forward(Tensor<T> &output, const Tensor<T> &input) override 
     {
         Tensor<T> enc_out_inter{};  // intermediate output tensor from encoder
         Tensor<T> enc_out_fin{};    // final output tensor from encoder LN
@@ -139,10 +176,7 @@ public:
 
         /* Setup encoder mask */
         Tensor<bool> src_mask{};
-        TopModel<T>::set_enc_mask(input, src_mask);
-
-        input.print_all( );
-        src_mask.print_all( );
+        TopModel<T>::set_pad_mask(src_mask, input, input);
 
         /* Encoder forward */
         embed_src->forward(input_embed, input);
@@ -154,6 +188,9 @@ public:
         tgt_input[0] = 1; // <start of sentence>
         for (int i=0; i<SENTENCE_LEN-2; i++)
         {
+#ifdef DEBUG
+            std::cout << "Generating the word at " << i+1 << std::endl;
+#endif
             /* Setup target mask */
             Tensor<bool> enc_mask{};
             Tensor<bool> tgt_mask{};
@@ -180,8 +217,6 @@ public:
 
             /* Set indices across the batch */
             set_new_tgt_input(tgt_input, max_indices, i);
-            std::cout << " Print : Whole Sentence > ";
-            max_indices.print_all();
         }
     }
 
@@ -192,6 +227,26 @@ public:
     }
 
 private:
+    void set_new_tgt_input(Tensor<T>& tgt_input, 
+            const Tensor<T>& max_indices, const int widx)
+    {
+        int new_len = tgt_input.shape[1]+1;
+        int num_input = tgt_input.shape[0];
+        Tensor<T> tmp_tgt_input(vector<int>{num_input, new_len});
+        for (int n=0; n<num_input; n++)
+        {
+            for (int j=0; j<tgt_input.shape[1]; j++)
+            {
+                tmp_tgt_input[n*new_len+j] = 
+                    tgt_input[n*tgt_input.shape[1]+j];
+            }
+
+            tmp_tgt_input[n*new_len+widx+1] = 
+                max_indices[n*max_indices.shape[1]+widx+1];
+        }
+        tgt_input = tmp_tgt_input;
+    }
+
     int voca_src_size;
     int voca_tgt_size;
     int SENTENCE_LEN;
@@ -204,6 +259,8 @@ private:
     LayerNorm<T>* ln_decoder = nullptr;
     Linear<T> *generator = nullptr;
     SoftMax<T> softMax;
+    MaxTensor<T> max_tensor;
+
 };
 }
 

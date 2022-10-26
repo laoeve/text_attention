@@ -1,14 +1,40 @@
-//
-// Created by dianh on 2021/04/16.
-//
-// Modified by hjpark
-// based from stage_module.h
-// 
+/*
+ * Copyright (c) 2022 Computer Architecture and Paralllel Processing Lab, 
+ * Seoul National University, Republic of Korea. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     1. Redistribution of source code must retain the above copyright 
+ *        notice, this list of conditions and the follwoing disclaimer.
+ *     2. Redistributions in binary form must reproduce the above copyright 
+ *        notice, this list conditions and the following disclaimer in the 
+ *        documentation and/or other materials provided with the distirubtion.
+ *     3. Neither the name of the copyright holders nor the name of its 
+ *        contributors may be used to endorse or promote products derived from 
+ *        this software without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: 
+ * Hyokeun Lee (hklee@capp.snu.ac.kr)
+ * Hyunjun Park (laoeve@capp.snu.ac.kr)
+ *
+ */
 
 #ifndef ATTENTION_TRANSFORMER_CPP_ENCODER_H
 #define ATTENTION_TRANSFORMER_CPP_ENCODER_H
 
-#include <vector>
+#include "bits/stdc++.h"
 
 #include "top_model.h"
 #include "tensor.h"
@@ -44,26 +70,33 @@ public:
         }
     }
 
-    ~Encoder() {
-        for (int i = 0; i < layers.size(); ++i) {
+    ~Encoder() 
+    {
+        for (int i = 0; i < layers.size(); ++i) 
+        {
             delete layers[i];
         }
     }
 
-    void forward(const Tensor<T> &input, Tensor<T> &output, const Tensor<bool> &mask) { 
+    void forward(Tensor<T> &output, const Tensor<T> &input, const Tensor<bool> &mask) { 
         Tensor<T> tmp_in(input);
         int layer_num = 0;
         for (auto blockPtr: layers) {
+#ifdef DEBUG
             std::cout << "Forward pass of encoder[" << layer_num++ << "]" << std::endl;
+#endif
+            layer_num = layer_num;
             
-            blockPtr->forward(tmp_in, output, mask);
+            blockPtr->forward(output, tmp_in, mask);
             tmp_in = output;
         }
     }
 
-    uint64_t parameterCount() override {
+    uint64_t parameterCount() override 
+    {
         uint64_t ret=0;
-        for (int i = 0; i < layers.size(); ++i) {
+        for (int i = 0; i < layers.size(); ++i) 
+        {
             ret += layers[i]->parameterCount();
         }
         return ret;

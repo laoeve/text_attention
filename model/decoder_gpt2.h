@@ -82,11 +82,11 @@ public:
 
         for (auto blockPtr: layers_gpt2) 
         {
-            std::cout << "Forward pass of gpt2 decoder[" << layer_num++ << "]" << std::endl;
-
+#ifdef DEBUG
+            std::cout << "Forward pass of decoder[" << layer_num++ << "]" << std::endl;
+#endif
             blockPtr->forward(output, tmp_in, tgt_mask);
             tmp_in = output;
-            std::cout << output << std::endl;
         }
     }
 

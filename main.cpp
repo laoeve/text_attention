@@ -37,6 +37,7 @@ int main(int argc, char* argv[]) {
     //string model_arg = "bert-base";
     //string model_arg = "bert-large";
     string model_arg = "gpt2";
+    //string model_arg = "t5";
 
     /* Parse argument */
     for (int i=0; i<argc; ) 
@@ -102,6 +103,7 @@ int main(int argc, char* argv[]) {
     else if (model_arg=="bert-base")
     {
         string path_shape = "../params/shape_bert_base_uncased.param";
+        //string path_value = "../../test_parsing2";
         string path_value = "../params/value_bert_base_uncased.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
@@ -119,6 +121,14 @@ int main(int argc, char* argv[]) {
     {
         string path_shape = "../params/shape_gpt2.param";
         string path_value = "../params/value_gpt2.param";
+        get_param_shape(path_shape, param_map);
+        get_param_value(path_value, param_map);
+        model = new GPT2<data_t>(voca_src.size( ), voca_tgt.size( ), model_arg);
+    }
+    else if (model_arg=="t5")
+    {
+        string path_shape = "../params/shape_t5.param";
+        string path_value = "../params/value_t5.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
         model = new GPT2<data_t>(voca_src.size( ), voca_tgt.size( ), model_arg);

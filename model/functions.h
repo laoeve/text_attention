@@ -111,7 +111,7 @@ std::map<int, std::string> vocab_parsing(std::string filename)
     std::ifstream input;
     input.open(filename);
     const bool print_log = false;
-    const std::regex re("\\('(.*?)', ([0-9]*)\\)");
+    const std::regex re("\\(['\"](.*?)[\"'], ([0-9]*)\\)");
 
     if (input.is_open()==false)
     {
@@ -130,7 +130,7 @@ std::map<int, std::string> vocab_parsing(std::string filename)
         while(regex_search(line, m, re)){
             vocab.insert(std::pair<int, std::string>(stoi(m[2]), m[1]));
             vocab_num+=1;
-            if (print_log == true){
+            if(print_log == true){
                 for(size_t i=0; i < m.size(); i++){
                     std::cout << m[i] << " at " << vocab_num << std::endl;
                 }
@@ -257,18 +257,27 @@ void get_param_value(std::string fpath, std::map<std::string, pinfo_t> &target_m
         const std::string wtail = ")";
         const std::string brk_head = "[";
         const std::string brk_tail = "]";
+        const std::string dtype_tail = "dtype";
 
         int pos;
-
-        while(pvals.find(pname)==0)
+        while(pvals.find(pname) != std::string::npos)
         {
-            pos = pvals.find(pname); //if find(pname) == npos > then skip;
-            pvals = pvals.replace(pos, pname.length(), ""); // for duplicated parsing name
+            pos = pvals.find(pname);
+            pvals = pvals.replace(pos, pname.length(), ""); // for duplicated pname
         }
         pos = pvals.find(whead);
         pvals = pvals.replace(pos, whead.length(), "");
+
+        if(pvals.find(dtype_tail) != std::string::npos)
+        {
+            pos = pvals.find(tmp_str);
+            pvals = pvals.replace(pos, tmp_str.length(), ""); // for duplicated pname
+        }
+        else
+        {
         pos = pvals.find(wtail);
         pvals = pvals.replace(pos, wtail.length(), "");
+        }
 
         pos = pvals.find(brk_head);
         while (pos!=std::string::npos)

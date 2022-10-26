@@ -1,8 +1,35 @@
-//
-// Created by dianh on 2021/04/16.
-//
-// Modified by hjpark
-// based from swin_block.h
+/*
+ * Copyright (c) 2022 Computer Architecture and Paralllel Processing Lab, 
+ * Seoul National University, Republic of Korea. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     1. Redistribution of source code must retain the above copyright 
+ *        notice, this list of conditions and the follwoing disclaimer.
+ *     2. Redistributions in binary form must reproduce the above copyright 
+ *        notice, this list conditions and the following disclaimer in the 
+ *        documentation and/or other materials provided with the distirubtion.
+ *     3. Neither the name of the copyright holders nor the name of its 
+ *        contributors may be used to endorse or promote products derived from 
+ *        this software without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: 
+ * Hyokeun Lee (hklee@capp.snu.ac.kr)
+ * Hyunjun Park (laoeve@capp.snu.ac.kr)
+ *
+ */
 
 #ifndef ATTENTION_TRANSFORMER_CPP_DECODER_LAYER_H
 #define ATTENTION_TRANSFORMER_CPP_DECODER_LAYER_H
@@ -108,14 +135,14 @@ public:
         delete residual_ff;
     }
 
-    void forward(const Tensor<T> &input, Tensor<T> &output, 
+    void forward(Tensor<T> &output, const Tensor<T> &input, 
             const Tensor<T> &memory, const Tensor<bool> &tgt_mask, 
             const Tensor<bool> &src_mask) {
         Tensor<T> mmh2mh{ };
         Tensor<T> mh2ff{ };
-        residual_mmh->forward(input, mmh2mh, tgt_mask, blank_mem);
-        residual_mh->forward(mmh2mh, mh2ff, src_mask, memory);
-        residual_ff->forward(mh2ff, output, blank_mask, blank_mem);
+        residual_mmh->forward(mmh2mh, input, tgt_mask, blank_mem);
+        residual_mh->forward(mh2ff, mmh2mh, src_mask, memory);
+        residual_ff->forward(output, mh2ff, blank_mask, blank_mem);
     }
 
 private:
