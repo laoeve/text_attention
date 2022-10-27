@@ -72,16 +72,16 @@ public:
         Tensor<T>* o_b = nullptr;
         if (bias_str.empty( ))
         {
-            Tensor<T>* h_b = new Tensor<T> { };
-            Tensor<T>* o_b = new Tensor<T> { };
+            h_b = new Tensor<T> { };
+            o_b = new Tensor<T> { };
         }
         else
         {
-            Tensor<T>* h_b = new Tensor<T>(
+            h_b = new Tensor<T>(
                 param_map[prefix_hidden+"."+bias_str].pvals,
                 param_map[prefix_hidden+"."+bias_str].pshape);
 
-            Tensor<T>* o_b = new Tensor<T>(
+            o_b = new Tensor<T>(
                 param_map[prefix_out+"."+bias_str].pvals,
                 param_map[prefix_out+"."+bias_str].pshape);
         }

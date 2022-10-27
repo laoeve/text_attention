@@ -33,10 +33,10 @@ int main(int argc, char* argv[]) {
     string path_value_input = "../sentence/value.input";
     string path_voca_src = "../dictionary/voca_de.dict";
     string path_voca_tgt = "../dictionary/voca_en.dict";
-    //string model_arg = "transformer";
+    string model_arg = "transformer";
     //string model_arg = "bert-base";
     //string model_arg = "bert-large";
-    string model_arg = "gpt2";
+    //string model_arg = "gpt2";
     //string model_arg = "t5";
 
     /* Parse argument */
@@ -103,7 +103,6 @@ int main(int argc, char* argv[]) {
     else if (model_arg=="bert-base")
     {
         string path_shape = "../params/shape_bert_base_uncased.param";
-        //string path_value = "../../test_parsing2";
         string path_value = "../params/value_bert_base_uncased.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
@@ -150,7 +149,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Input tensor dimension: " << input << std::endl;
 
     /* Run model */
-    // model->forward(input, output);
+    model->forward(input, output);
 
     // delete model;
     return 0;

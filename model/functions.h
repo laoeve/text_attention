@@ -271,13 +271,10 @@ void get_param_value(std::string fpath, std::map<std::string, pinfo_t> &target_m
         if(pvals.find(dtype_tail) != std::string::npos)
         {
             pos = pvals.find(tmp_str);
-            pvals = pvals.replace(pos, tmp_str.length(), ""); // for duplicated pname
+            pvals = pvals.replace(pos, tmp_str.length()-1, ""); // for duplicated pname
         }
-        else
-        {
         pos = pvals.find(wtail);
         pvals = pvals.replace(pos, wtail.length(), "");
-        }
 
         pos = pvals.find(brk_head);
         while (pos!=std::string::npos)
@@ -293,7 +290,7 @@ void get_param_value(std::string fpath, std::map<std::string, pinfo_t> &target_m
             pos = pvals.find(brk_tail);
         }
 
-//        cout << pvals << endl;
+        // cout << pvals << endl;
 
         linestream.str(pvals);
         linestream.clear( ); 
@@ -308,9 +305,14 @@ void get_param_value(std::string fpath, std::map<std::string, pinfo_t> &target_m
         /* Insert parameters */
         target_map[pname].pvals = vvec;
 
+
         cout << "Finish getting parameters of : " 
             << pname << " " << target_map[pname].pvals.size( ) << endl;
-    
+/*
+        for(int i =0 ; i < target_map[pname].pshape.size(); ++i){
+            cout << "size verify" << target_map[pname].pshape[i]<<endl;
+        }
+ */
         pname = "";
         pvals = "";
     }

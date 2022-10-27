@@ -149,7 +149,7 @@ public:
         Tensor<T>* gen_w = new Tensor<T>(
                 param_map[gen_str+"."+weight_str].pvals,
                 param_map[gen_str+"."+weight_str].pshape);
-        Tensor<T>* gen_b = nullptr;
+        Tensor<T>* gen_b = new Tensor<T> { };
 
         generator = new Linear<T>(gen_str, dim_embed, 
                 voca_tgt_size, *gen_w, *gen_b);
