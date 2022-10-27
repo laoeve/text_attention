@@ -33,10 +33,10 @@ int main(int argc, char* argv[]) {
     string path_value_input = "../sentence/value.input";
     string path_voca_src = "../dictionary/voca_de.dict";
     string path_voca_tgt = "../dictionary/voca_en.dict";
-    string model_arg = "transformer";
+    //string model_arg = "transformer";
     //string model_arg = "bert-base";
     //string model_arg = "bert-large";
-    //string model_arg = "gpt2";
+    string model_arg = "gpt2";
     //string model_arg = "t5";
 
     /* Parse argument */

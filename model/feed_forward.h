@@ -100,15 +100,15 @@ public:
     }
 
     void forward(Tensor <T> &output, const Tensor <T> &input, 
-            const Tensor<bool> &/*mask*/, const Tensor<T> &memory) override 
+            const Tensor<bool> &mask, const Tensor<T> &memory) override 
     {
         Tensor<T> h2out{};
-        linear_o->forward(output, h2out);
+        linear_h->forward(h2out, input);
 
         for (int i=0; i<h2out.size( ); i++)
             h2out[i] = GELU(h2out[i]);
 
-        linear_o->forward(h2out, output);
+        linear_o->forward(output, h2out);
     }
 
     uint64_t parameterCount() override {

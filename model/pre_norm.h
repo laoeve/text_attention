@@ -45,7 +45,7 @@ public:
     void forward(Tensor <T> &output, const Tensor <T> &input, 
             const Tensor<bool> &mask, const Tensor<T> &memory) override {
         Tensor<T> fn2ln{};
-        layerNorm->forward(input, fn2ln);
+        layerNorm->forward(fn2ln, input);
         fn->forward(output, fn2ln, mask, memory);
     }
 
