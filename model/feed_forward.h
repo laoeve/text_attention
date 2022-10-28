@@ -70,7 +70,7 @@ public:
 
         Tensor<T>* h_b = nullptr;
         Tensor<T>* o_b = nullptr;
-        if (bias_str.empty( ))
+        if (bias_str.empty( ) == true)
         {
             h_b = new Tensor<T> { };
             o_b = new Tensor<T> { };

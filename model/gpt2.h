@@ -57,7 +57,7 @@ public:
     : voca_src_size(voca_src_size),voca_tgt_size(voca_tgt_size),model_arg(model_arg)
     {
         /* Template */
-        SENTENCE_LEN = 128;     // max = 1024
+        SENTENCE_LEN = 128;
         TopModel<T>::num_layers = 12;
         TopModel<T>::dim_embed = 768;
         TopModel<T>::num_heads = 12;
@@ -85,23 +85,23 @@ public:
         const string ff_hidden_str = "mlp.c_fc";
         const string ff_out_str = "mlp.c_proj";
 
-        const string LN_mh_str = "ln_1";
-        const string LN_ff_str = "ln_2";
+        const string LN_mh_str = "";
+        const string LN_ff_str = "";
         const string LN_dec_mmh_str = "";
-        const string LN_dec_mh_str = "";
-        const string LN_dec_ff_str = "";
+        const string LN_dec_mh_str = "ln_1";
+        const string LN_dec_ff_str = "ln_2";
         const string LN_out = "";
-        const string LN_gamma_str = "a_2";
-        const string LN_beta_str = "b_2";
+        const string LN_gamma_str = "weight";
+        const string LN_beta_str = "bias";
 
         const string prefix_em_token = "wte";
         const string prefix_em_pos = "wpe";
         const string em_str = "weight";
         const string pe_str = "weight";
-        const string gen_str = "ln_f.weight";
+        const string gen_str = "ln_f";
 
         /* Init embedding layers */
-        Tensor<T>* lut_em_token = new Tensor<T>(
+        lut_em_token = new Tensor<T>(
                 param_map[prefix_em_token+"."+em_str].pvals,
                 param_map[prefix_em_token+"."+em_str].pshape);
         Tensor<T>* lut_em_pos = new Tensor<T>(
@@ -123,8 +123,8 @@ public:
                 param_map[gen_str+"."+weight_str].pvals,
                 param_map[gen_str+"."+weight_str].pshape);
         Tensor<T>* gen_b = new Tensor<T>(
-                param_map[gen_str+"."+weight_str].pvals,
-                param_map[gen_str+"."+weight_str].pshape);
+                param_map[gen_str+"."+bias_str].pvals,
+                param_map[gen_str+"."+bias_str].pshape);
 
         generator = new Linear<T>(gen_str, dim_embed, 
                 voca_tgt_size, *gen_w, *gen_b);
@@ -144,16 +144,21 @@ public:
 
         embed_words->forward(input_embed, input);
 
-        /* Decoder part operation word-by-word */
-        Tensor<T> tgt_input(vector<int>{input.shape[0], 2});
-        tgt_input[0] = 1; // <start of sentence>
-
         decoder_gpt2->forward(dec_out_inter, input_embed, tgt_mask);
 
         /* Generator and softmax */
         Tensor<T> gen_out{ };
         generator->forward(gen_out, dec_out_inter);
+        
+        //Layer<T>* layer_tensor { };
+        Tensor<T> logits{ };
+        //gen_out.reshape(std::vector(gen_out.shape[1], gen_out.shape[2]));
+        (*lut_em_token).transpose( );
+        layer_tensor->matmul(logits, gen_out, *lut_em_token, 1.0);
 
+                /* Find max value of probability */
+        Tensor<T> max_indices{ };
+        max_tensor.forward(max_indices, logits);
     }
 
     uint64_t parameterCount() 
@@ -187,9 +192,12 @@ private:
     int voca_tgt_size;
     int SENTENCE_LEN;
     string model_arg;
+    Tensor<T>* lut_em_token = nullptr;
     Embedding<T>* embed_words = nullptr;
     Decoder_GPT2<T> *decoder_gpt2 = nullptr;
     Linear<T> *generator = nullptr;
+    MaxTensor<T> max_tensor;
+    Layer<T> *layer_tensor;
 };
 }
 

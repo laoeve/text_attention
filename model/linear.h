@@ -19,9 +19,7 @@ public:
     : name(name), in_feature(in_feature), out_feature(out_feature) 
     {
         weights = &param_weights;
-        cout << weights << endl;
         bias = &param_bias;
-        cout << bias << endl;
 
         if (weights->shape[0]==out_feature && 
                 weights->shape[1]==in_feature)
@@ -41,9 +39,9 @@ public:
     void print_params( ) override 
     {
         std::cout << ">>>>>>>> Linear - " << name 
-            << " weight.shape=" << *weights;
+            << "weight.shape=" << *weights << std::endl;
         if((*bias).is_void( ) == false)
-            std::cout << " bias.shape=" << *bias << std::endl;
+            std::cout << "bias.shape=" << *bias << std::endl;
     }
 
     void forward(Tensor <T> &output, const Tensor <T> &input) override 

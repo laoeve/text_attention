@@ -59,10 +59,20 @@ public:
     {
         /* Template */
         SENTENCE_LEN = 128;
-        TopModel<T>::num_layers = 6;
-        TopModel<T>::dim_embed = 512;
-        TopModel<T>::num_heads = 8;
-        TopModel<T>::dim_ff = 2048;
+        if (model_arg == "t5-small")
+        {
+                TopModel<T>::num_layers = 6;
+                TopModel<T>::dim_embed = 512;
+                TopModel<T>::num_heads = 8;
+                TopModel<T>::dim_ff = 2048;
+        }
+        else if (model_arg == "t5-base")
+        {
+                TopModel<T>::num_layers = 12;
+                TopModel<T>::dim_embed = 768;
+                TopModel<T>::num_heads = 12;
+                TopModel<T>::dim_ff = 3072;
+        }
         int num_layers = TopModel<T>::num_layers; 
         int dim_embed = TopModel<T>::dim_embed; 
         int num_heads = TopModel<T>::num_heads;
@@ -83,8 +93,10 @@ public:
         const string eda_value_str = "layer.1.EncDecAttention.v";
         const string eda_out_str = "layer.1.EncDecAttention.o";
 
-        const string ff_hidden_str = "layer.1.DenseReluDense.wi.weight";
-        const string ff_out_str = "layer.1.DenseReluDense.wo.weight";
+        const string ff_hidden_str = "layer.1.DenseReluDense.wi";
+        const string ff_out_str = "layer.1.DenseReluDense.wo";
+        const string ff_eda_hidden_str = "layer.2.DenseReluDense.wi";
+        const string ff_eda_out_str = "layer.2.DenseReluDense.wo";
 
         const string LN_mh_str = "layer.0.layer_norm";
         const string LN_ff_str = "layer.1.layer_norm";
@@ -130,7 +142,7 @@ public:
                 LN_gamma_str, LN_beta_str, sa_query_str, 
                 sa_key_str, sa_value_str, sa_out_str,
                 eda_query_str, eda_key_str, eda_value_str, eda_out_str,
-                ff_hidden_str, ff_out_str, 
+                ff_eda_hidden_str, ff_eda_out_str, 
                 LN_dec_mmh_str, LN_dec_mh_str, LN_dec_ff_str);
 
         vector<T>* gamma = new vector<T>(

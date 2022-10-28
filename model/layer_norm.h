@@ -59,7 +59,7 @@ public:
     void print_params( ) override
     {
         std::cout << ">>>>>>>> LayerNorm - " << name 
-            << " gamma.shape=" << gamma->size( );
+            << " gamma.shape=" << gamma->size( ) << std::endl;
         if(beta->empty( ) == false)
             std::cout << " beta.shape=" << beta->size( ) << std::endl;
     }

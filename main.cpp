@@ -29,15 +29,17 @@ void swap_tensor(Tensor<data_t>& swp_a, Tensor<data_t>& swp_b)
 
 int main(int argc, char* argv[]) {
     /* Model arguments */
-    string path_shape_input = "../sentence/shape.input";
-    string path_value_input = "../sentence/value.input";
+    string path_shape_input;
+    string path_value_input;
     string path_voca_src = "../dictionary/voca_de.dict";
     string path_voca_tgt = "../dictionary/voca_en.dict";
     //string model_arg = "transformer";
     //string model_arg = "bert-base";
     //string model_arg = "bert-large";
-    string model_arg = "gpt2";
-    //string model_arg = "t5";
+    //string model_arg = "gpt2";
+    string model_arg = "t5-small";
+    //string model_arg = "t5-base";
+    
 
     /* Parse argument */
     for (int i=0; i<argc; ) 
@@ -69,10 +71,10 @@ int main(int argc, char* argv[]) {
 
         if (arg_str=="-m" || arg_str=="--model")
             model_arg = argv[i+1];
-        else if (arg_str=="--input-shape-path") 
+/*         else if (arg_str=="--input-shape-path") 
             path_shape_input = argv[i+1];
         else if (arg_str=="--input-value-path")
-            path_value_input = argv[i+1];
+            path_value_input = argv[i+1]; */
         else
         {
             std::cerr << "Error: invalid option provided!" << std::endl;
@@ -94,6 +96,8 @@ int main(int argc, char* argv[]) {
     TopModel<data_t>* model = nullptr;
     if (model_arg=="transformer") 
     { 
+        path_shape_input = "../sentence/shape_128.input";
+        path_value_input = "../sentence/value_transformer.input";
         string path_shape = "../params/shape_transformer.param";
         string path_value = "../params/value_transformer.param";
         get_param_shape(path_shape, param_map);
@@ -102,6 +106,8 @@ int main(int argc, char* argv[]) {
     }
     else if (model_arg=="bert-base")
     {
+        path_shape_input = "../sentence/shape_128.input";
+        path_value_input = "../sentence/value_BERT.input";
         string path_shape = "../params/shape_bert_base_uncased.param";
         string path_value = "../params/value_bert_base_uncased.param";
         get_param_shape(path_shape, param_map);
@@ -110,6 +116,8 @@ int main(int argc, char* argv[]) {
     }
     else if (model_arg=="bert-large")
     {
+        path_shape_input = "../sentence/shape_128.input";
+        path_value_input = "../sentence/value_BERT.input";
         string path_shape = "../params/shape_bert_large_uncased.param";
         string path_value = "../params/value_bert_large_uncased.param";
         get_param_shape(path_shape, param_map);
@@ -118,19 +126,33 @@ int main(int argc, char* argv[]) {
     }
     else if (model_arg=="gpt2")
     {
+        path_shape_input = "../sentence/shape_GPT2.input";
+        path_value_input = "../sentence/value_GPT2.input";
         string path_shape = "../params/shape_gpt2.param";
         string path_value = "../params/value_gpt2.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
         model = new GPT2<data_t>(voca_src.size( ), voca_tgt.size( ), model_arg);
     }
-    else if (model_arg=="t5")
+    else if (model_arg=="t5-base")
     {
-        string path_shape = "../params/shape_t5.param";
-        string path_value = "../params/value_t5.param";
+        path_shape_input = "../sentence/shape_128.input";
+        path_value_input = "../sentence/value_T5.input";
+        string path_shape = "../params/shape_t5_base.param";
+        string path_value = "../params/value_t5_base.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
-        model = new GPT2<data_t>(voca_src.size( ), voca_tgt.size( ), model_arg);
+        model = new T5<data_t>(voca_src.size( ), voca_tgt.size( ), model_arg);
+    }
+    else if (model_arg=="t5-small")
+    {
+        path_shape_input = "../sentence/shape_128.input";
+        path_value_input = "../sentence/value_T5.input";
+        string path_shape = "../params/shape_t5_small.param";
+        string path_value = "../params/value_t5_small.param";
+        get_param_shape(path_shape, param_map);
+        get_param_value(path_value, param_map);
+        model = new T5<data_t>(voca_src.size( ), voca_tgt.size( ), model_arg);
     }
     else
     {
@@ -151,7 +173,8 @@ int main(int argc, char* argv[]) {
     /* Run model */
     model->forward(output, input);
 
-    // delete model;
+    //delete model;
+    cout << "done" << endl;
     return 0;
 }
 
