@@ -68,8 +68,9 @@ public:
     void print_params( ) override
     {
         std::cout << "Init embedding " << name 
-            << " embeddingTable.shape=" << *lut_em
-            << " positionalEncoding.shape=" << *lut_pe << std::endl;
+            << " embeddingTable.shape=" << *lut_em; 
+        if(lut_pe->is_void( )==false)
+            std::cout << " positionalEncoding.shape=" << *lut_pe << std::endl;
     }
 
     void forward(Tensor<T>& output, const Tensor<T>& input) override
@@ -88,9 +89,11 @@ public:
             {
                 for (int ebd=0; ebd<dim_model; ebd++)
                 {
-                    output[n*len*dim_model+idx*dim_model+ebd] = 
-                        (*lut_em)[input[n*len+idx]*dim_model+ebd] *
-                        std::sqrt(dim_model) + (*lut_pe)[idx*dim_model+ebd];
+                    embed_pos = (*lut_em)[input[n*len+idx]*dim_model+ebd] *
+                                std::sqrt(dim_model);
+                    if (lut_pe->is_void( )==false)
+                        embed_pos+= (*lut_pe)[idx*dim_model+ebd];
+                    output[n*len*dim_model+idx*dim_model+ebd] = embed_pos;
                 }
             }
         }
@@ -101,6 +104,7 @@ private:
     Tensor<T>* lut_pe; // positional encoding table
     std::string name;
     int dim_model;
+    T embed_pos;
 };
 };
 

@@ -31,8 +31,8 @@
  *
  */
 
-#ifndef ATTENTION_TRANSFORMER_CPP_ENCODER_LAYER_H
-#define ATTENTION_TRANSFORMER_CPP_ENCODER_LAYER_H
+#ifndef ATTENTION_TRANSFORMER_CPP_DECODER_LAYER_GPT2_H
+#define ATTENTION_TRANSFORMER_CPP_DECODER_LAYER_GPT2_H
 
 #include "bits/stdc++.h"
 #include "top_model.h"
@@ -46,20 +46,21 @@ using namespace std;
 
 namespace text_attention {
 template<typename T>
-class EncoderLayer : virtual public Layer<T> {
+class DecoderLayer_GPT2 : virtual public Layer<T> {
 public:
-    EncoderLayer(TopModel<T>* master,
-            int dim_model, int num_heads, int dim_ff, const string prefix_enc, 
-            const string prefix_layer, int id, const string weight_str, 
-            const string bias_str, const string LN_gamma_str, 
-            const string LN_beta_str, const string sa_query_str, 
-            const string sa_key_str, const string sa_value_str, 
-            const string sa_out_str, const string ff_hidden_str, 
-            const string ff_out_str, const string LN_mh_str, const string LN_ff_str) 
+    DecoderLayer_GPT2(TopModel<T>* master,
+            int dim_model, int num_heads, int dim_ff,
+            const string prefix_dec, const string prefix_layer, int id,
+            const string weight_str, const string bias_str,
+            const string LN_gamma_str, const string LN_beta_str,             
+            const string sa_query_str, const string sa_key_str, 
+            const string sa_value_str, const string sa_out_str, 
+            const string ff_hidden_str, const string ff_out_str, 
+            const string LN_mh_str, const string LN_ff_str) 
     : Layer<T>(master)
     {
-        string prefix_str = prefix_enc+"."+prefix_layer+"."+to_string(id);
-        std::cout << "Init encoder - " << prefix_str << std::endl;
+        string prefix_str = prefix_dec+"."+to_string(id);
+        std::cout << "Init decoder - " << prefix_str << std::endl;
         
         /* Init attention layer */
         multiheadAttention = new MultiheadAttention<T>(master, 
@@ -67,16 +68,16 @@ public:
                 sa_query_str, sa_key_str, sa_value_str, sa_out_str);
 
         /* Init feedforward layer (MLP) */
-        feedForward = new FeedForward<T>(master, dim_model, dim_ff,
+        positionwisefeedForward = new FeedForward<T>(master, dim_model, dim_ff,
                 prefix_str, weight_str, bias_str, ff_hidden_str, ff_out_str);
 
         /* Init layer normalizations */
-        postNorm_mh = new PostNorm<T>(master, multiheadAttention, dim_model,
-                prefix_str+"."+LN_mh_str, LN_gamma_str, LN_beta_str);
+        postNorm_mh = new PostNorm<T>(master, multiheadAttention,
+                dim_model, prefix_str+"."+LN_mh_str, LN_gamma_str, LN_beta_str);
         residual_mh = new Residual<T>(postNorm_mh);
 
-        postNorm_ff = new PostNorm<T>(master, feedForward, dim_model,
-                prefix_str+"."+LN_ff_str, LN_gamma_str, LN_beta_str);
+        postNorm_ff = new PostNorm<T>(master, positionwisefeedForward,
+                dim_model, prefix_str+"."+LN_ff_str, LN_gamma_str, LN_beta_str);
         residual_ff = new Residual<T>(postNorm_ff);
     }
 
@@ -85,8 +86,8 @@ public:
         if (multiheadAttention) {
             ret += multiheadAttention->parameterCount();
         }
-        if (feedForward) {
-            ret += feedForward->parameterCount();
+        if (positionwisefeedForward) {
+            ret += positionwisefeedForward->parameterCount();
         }
         if (postNorm_mh) {
             ret += postNorm_mh->parameterCount();
@@ -103,16 +104,17 @@ public:
         return ret;
     }
 
-    ~EncoderLayer() {
+    ~DecoderLayer_GPT2() {
         delete multiheadAttention;
-        delete feedForward;
+        delete positionwisefeedForward;
         delete postNorm_mh;
         delete postNorm_ff;
         delete residual_mh;
         delete residual_ff;
     }
 
-    void forward(Tensor<T> &output, const Tensor<T> &input, const Tensor<bool> &mask) 
+    void forward(Tensor<T> &output, const Tensor<T> &input,
+            const Tensor<bool> &mask) 
     {
         Tensor<T> mh2ff{};
         residual_mh->forward(mh2ff, input, mask, blank_mem);
@@ -121,7 +123,7 @@ public:
 
 private:
     MultiheadAttention<T> *multiheadAttention = nullptr;
-    FeedForward<T> *feedForward = nullptr;
+    FeedForward<T> *positionwisefeedForward = nullptr;
     PostNorm<T> *postNorm_mh = nullptr; 
     PostNorm<T> *postNorm_ff = nullptr;
     Residual<T> *residual_mh = nullptr;
@@ -130,4 +132,4 @@ private:
     Tensor<T> blank_mem {};
 };
 }
-#endif //ATTENTION_TRANSFORMER_CPP_ENCODER_LAYER_H
+#endif //ATTENTION_TRANSFORMER_CPP_DECODER_LAYER_GPT2_H
