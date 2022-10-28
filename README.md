@@ -3,7 +3,7 @@ C++ Transformer code without GPU library
 It is an implementation of Transformer targtes on NLP
 The code is originally based on [dianhsu swin-transformer](https://github.com/dianhsu/swin-transformer-cpp.git)
 
-Archived files (i.e., parameters, dictionary, input sentence) can be downaload at [Project files](https://drive.google.com/drive/folders/17wloS01iR_vWAiZKwJCC8_3HH8-uIaxR?usp=sharing)
+Archived files (i.e., parameters, dictionary, input sentence) can be downaload at [Project files](https://drive.google.com/file/d/1lho6g5qbjvt-2sQNN2nmOyTjw3_6KzKk/view?usp=sharing)
 
 Build and run 
 -------------------------
