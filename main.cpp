@@ -102,8 +102,8 @@ int main(int argc, char* argv[])
     {
         path_shape_input = "../sentence/shape_128.input";
         path_value_input = "../sentence/value_BERT.input";
-        string path_shape = "../params/shape_bert_base_uncased.param";
-        string path_value = "../params/value_bert_base_uncased.param";
+        string path_shape = "../params/shape_bert_base.param";
+        string path_value = "../params/value_bert_base.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
         model = new BERT<data_t>(param_map["embeddings.word_embeddings.weight"].pshape[0], param_map["embeddings.word_embeddings.weight"].pshape[0], model_arg);
@@ -112,8 +112,8 @@ int main(int argc, char* argv[])
     {
         path_shape_input = "../sentence/shape_128.input";
         path_value_input = "../sentence/value_BERT.input";
-        string path_shape = "../params/shape_bert_large_uncased.param";
-        string path_value = "../params/value_bert_large_uncased.param";
+        string path_shape = "../params/shape_bert_large.param";
+        string path_value = "../params/value_bert_large.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
         model = new BERT<data_t>(param_map["embeddings.word_embeddings.weight"].pshape[0], param_map["embeddings.word_embeddings.weight"].pshape[0], model_arg);
