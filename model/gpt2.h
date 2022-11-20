@@ -57,7 +57,7 @@ public:
     : voca_src_size(voca_src_size),voca_tgt_size(voca_tgt_size),model_arg(model_arg)
     {
         /* Template */
-        SENTENCE_LEN = 128;
+        SENTENCE_LEN = 32;
         TopModel<T>::num_layers = 12;
         TopModel<T>::dim_embed = 768;
         TopModel<T>::num_heads = 12;
@@ -138,27 +138,39 @@ public:
         Tensor<T> dec_out_fin{};    // final output tensor from encoder LN
         Tensor<T> input_embed{};
 
-        /* Setup encoder mask */
-        Tensor<bool> tgt_mask{};
-        TopModel<T>::set_dec_mask(tgt_mask, input);
+        Tensor<T> input_iter(input, input.shape);
 
-        embed_words->forward(input_embed, input);
+        for (int i=0; i<SENTENCE_LEN-2; i++)
+        {
+            /* Setup encoder mask */
+            Tensor<bool> tgt_mask{};
+            TopModel<T>::set_dec_mask(tgt_mask, input_iter);
 
-        decoder_gpt2->forward(dec_out_inter, input_embed, tgt_mask);
+            embed_words->forward(input_embed, input_iter);
 
-        /* Generator and softmax */
-        Tensor<T> gen_out{ };
-        generator->forward(gen_out, dec_out_inter);
+#ifdef DEBUG
+            std::cout << "Generating the word at " << i+1 << std::endl;
+#endif
+
+            decoder_gpt2->forward(dec_out_inter, input_embed, tgt_mask);
+
+            /* Generator and softmax */
+            Tensor<T> gen_out{ };
+            generator->forward(gen_out, dec_out_inter);
         
-        //Layer<T>* layer_tensor { };
-        Tensor<T> logits{ };
-        //gen_out.reshape(std::vector(gen_out.shape[1], gen_out.shape[2]));
-        (*lut_em_token).transpose( );
-        layer_tensor->matmul(logits, gen_out, *lut_em_token, 1.0);
+            //Layer<T>* layer_tensor { };
+            Tensor<T> logits{ };
+            //gen_out.reshape(std::vector(gen_out.shape[1], gen_out.shape[2]));
+            (*lut_em_token).transpose( );
+            layer_tensor->matmul(logits, gen_out, *lut_em_token, 1.0);
 
-                /* Find max value of probability */
-        Tensor<T> max_indices{ };
-        max_tensor.forward(max_indices, logits);
+            /* Find max value of probability */
+            Tensor<T> max_indices{ };
+            max_tensor.forward(max_indices, logits);
+
+            /* Set indices across the batch */
+            set_new_tgt_input(input_iter, max_indices, i);
+        }
     }
 
     uint64_t parameterCount() 

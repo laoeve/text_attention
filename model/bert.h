@@ -58,7 +58,7 @@ public:
     : voca_src_size(voca_src_size),voca_tgt_size(voca_tgt_size),model_arg(model_arg)
     {
         /* Template */
-        SENTENCE_LEN = 32;     // in BERT squad : 32, attention : 128
+        SENTENCE_LEN = 32;     // equivalent iteration value for comparison
         if (model_arg == "bert-base")
         {
                 TopModel<T>::num_layers = 12;
@@ -155,7 +155,7 @@ public:
 
     void forward(Tensor<T> &output, const Tensor<T> &input) override 
     {
-        Tensor<T> tgt_input(input, input.shape);
+        Tensor<T> input_iter(input, input.shape);
 
         Tensor<T> enc_out_inter{};  // intermediate output tensor from encoder
         Tensor<T> enc_out_fin{};    // final output tensor from encoder LN
@@ -164,17 +164,25 @@ public:
 
         /* Setup encoder mask */
         Tensor<bool> src_mask{};
-        TopModel<T>::set_pad_mask(src_mask, tgt_input, tgt_input);
+        TopModel<T>::set_pad_mask(src_mask, input_iter, input_iter);
 
-        /* Encoder forward */
-        embed_src->forward(input_embed, input);
-        norm_embed_src->forward(input_norm, input_embed);
 
-        encoder->forward(enc_out_fin, input_norm, src_mask);  //To-Do : change tgt_mask
+        for (int i=0; i<SENTENCE_LEN-2; i++)
+        {
+#ifdef DEBUG
+            std::cout << "Generating the word at " << i+1 << std::endl;
+#endif
 
-        Tensor<T> pooler_out{ };
-        pooler->forward(pooler_out, enc_out_fin);
-
+            /* Encoder forward */
+            embed_src->forward(input_embed, input_iter);
+            norm_embed_src->forward(input_norm, input_embed);
+            
+            encoder->forward(enc_out_fin, input_norm, src_mask);  //To-Do : change tgt_mask
+            
+            Tensor<T> pooler_out{ };
+            pooler->forward(pooler_out, enc_out_fin);
+            
+        }
     }
 
     uint64_t parameterCount() 
