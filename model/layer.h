@@ -31,6 +31,7 @@ public:
     void matmul(Tensor<T>& out, const Tensor<T>& opa, 
             const Tensor<T>& opb, const T scale_factor)
     {
+        std::chrono::time_point<clock_> start_t = clock_::now();
 #ifdef DEBUG
         if ((opa.get_dims( )==1 && opb.get_dims( )==1 && opb.shape[0]!=1) ||
             (opa.get_dims( )==2 && opa.shape[1]!=opb.shape[0]))
@@ -63,7 +64,8 @@ public:
                 out[i*num_col+j] *= scale_factor;
             }
         }
-    }
+            interval_map["layer_matmul"] += INTERVAL(start_t);
+}
 
 protected:
     TopModel<T>* master;

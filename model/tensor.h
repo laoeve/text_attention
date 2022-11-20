@@ -6,6 +6,7 @@
 #define ATTENTION_TRANSFORMER_CPP_TENSOR_H
 
 #include <bits/stdc++.h>
+#include <functions.h>
 
 namespace text_attention {
 typedef std::vector<int> TensorShape;
@@ -130,6 +131,7 @@ public:
 
     void transpose( ) 
     {
+        std::chrono::time_point<clock_> start_t = clock_::now();
         if (shape.size( )==1) 
         {
             /* Single element */
@@ -191,6 +193,7 @@ public:
             assert(0);
             exit(1);
         }
+        interval_map["Tensor Transpose"] += INTERVAL(start_t);
     }
 
     friend std::ostream &operator<<(std::ostream &os, const Tensor<T> &vec) 

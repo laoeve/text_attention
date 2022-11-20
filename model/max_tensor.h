@@ -46,6 +46,7 @@ class MaxTensor : virtual public Layer<T>
 public:
     void forward(Tensor<T>& output, const Tensor<T>& input) override
     {
+        std::chrono::time_point<clock_> start_t = clock_::now();
         /* Extract shape information */
         int num_input = 1;
         int num_row = input.shape[0];
@@ -79,6 +80,7 @@ public:
                 output[n*sz_outstack+i] = max_index;
             }
         }
+        interval_map["Max Tensor"] += INTERVAL(start_t);
     }
 
     uint64_t parameterCount() override 

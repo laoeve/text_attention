@@ -60,6 +60,7 @@ private:
     //TODO: optimize in future if possible
     void multiply(const Tensor<T>& input, Tensor<T>& output)
     {
+        std::chrono::time_point<clock_> start_t = clock_::now();
         /* Determine shapes of operators */
         int num_input = 1;
         int num_row = input.shape[0];
@@ -106,6 +107,7 @@ private:
                 }
             }
         }
+        interval_map["interval_multiply_sum"] += INTERVAL(start_t);
     }
 
     bool is_operable(const Tensor<T>& op)

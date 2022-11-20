@@ -14,6 +14,7 @@ class SoftMax : virtual public Layer<T> {
 public:
     void forward(Tensor<T>& output, const Tensor <T> &input) override 
     {
+        std::chrono::time_point<clock_> start_t = clock_::now();
         int dim = input.shape[input.get_dims()-1];
         output.reshape(input.shape);
         for (int i = 0; i < input.size(); i += dim) 
@@ -28,6 +29,7 @@ public:
                 output[i+j] = (exp(input[i + j]) / sum);
             }
         }
+        interval_map["SoftMax_forward"] += INTERVAL(start_t);
     }
 
     uint64_t parameterCount() override 
