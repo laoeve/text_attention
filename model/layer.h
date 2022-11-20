@@ -5,8 +5,8 @@
 #ifndef ATTENTION_TRANSFORMER_CPP_LAYER_H
 #define ATTENTION_TRANSFORMER_CPP_LAYER_H
 
+#include "bits/stdc++.h"
 #include "top_model.h"
-#include <bits/stdc++.h>
 #include "tensor.h"
 
 namespace text_attention {

@@ -38,8 +38,9 @@ public:
     void print_params( ) override 
     {
         std::cout << ">>>>>>>> Linear - " << name 
-            << " weight.shape=" << *weights 
-            << " bias.shape=" << *bias << std::endl;
+            << "weight.shape=" << *weights << std::endl;
+        if((*bias).is_void( ) == false)
+            std::cout << "bias.shape=" << *bias << std::endl;
     }
 
     void forward(Tensor <T> &output, const Tensor <T> &input) override 
@@ -88,7 +89,14 @@ private:
             {
                 for (int j=0; j<out_feature; j++)
                 {
-                    output[n*sz_outstack+i*out_feature+j] += (*bias)[j];
+                    if(bias->is_void( ))
+                    {
+                        output[n*sz_outstack+i*out_feature+j] = 1.;
+                    }
+                    else
+                    {
+                        output[n*sz_outstack+i*out_feature+j] += (*bias)[j];
+                    }
                     for (int k=0; k<in_feature; k++)
                     {
                         output[n*sz_outstack+i*out_feature+j] +=

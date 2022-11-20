@@ -59,8 +59,9 @@ public:
     void print_params( ) override
     {
         std::cout << ">>>>>>>> LayerNorm - " << name 
-            << " gamma.shape=" << gamma->size( ) 
-            << " beta.shape=" << beta->size( ) << std::endl;
+            << " gamma.shape=" << gamma->size( ) << std::endl;
+        if(beta->empty( ) == false)
+            std::cout << " beta.shape=" << beta->size( ) << std::endl;
     }
 
     uint64_t parameterCount() override
@@ -114,7 +115,10 @@ public:
                 for (int j=0; j<dim; j++)
                 {
                     float norm = (input[n*sz_stack+i*dim+j]-mean_x)/denominator;
-                    output[n*sz_stack+i*dim+j] = norm*((*gamma)[j])+((*beta)[j]);
+                    value_out = norm*((*gamma)[j]);
+                    if (beta->empty( )==false)
+                        value_out += ((*beta)[j]);
+                    output[n*sz_stack+i*dim+j] = value_out;
                 }
             }
         }
@@ -134,6 +138,7 @@ private:
     }
 
     float eps;
+    T value_out;
     std::vector<T> *gamma = nullptr; 
     std::vector<T> *beta = nullptr; 
     std::string name;

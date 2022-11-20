@@ -5,3 +5,5 @@ build/
 *.dict
 *.swp
 *.tar.gz
+.DS_Store
+CMakeLists.txt

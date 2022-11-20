@@ -68,20 +68,54 @@ public:
         string bq_str = prefix_str+"."+sa_query_str+"."+bias_str;
         string bk_str = prefix_str+"."+sa_key_str+"."+bias_str;
         string bv_str = prefix_str+"."+sa_value_str+"."+bias_str;
-        string wout_str = prefix_str+"."+sa_out_str+"."+weight_str;
+        string wout_str = prefix_str+"."+sa_out_str+"."+weight_str; // h.0 . attn.c_proj . weight
         string bout_str = prefix_str+"."+sa_out_str+"."+bias_str;
 
         /* 'Tensorize' */
-        Tensor<T> in_Wq(param_map[wq_str].pvals, param_map[wq_str].pshape);
-        Tensor<T> in_Wk(param_map[wk_str].pvals, param_map[wk_str].pshape);
-        Tensor<T> in_Wv(param_map[wv_str].pvals, param_map[wv_str].pshape);
-        Tensor<T> in_Bq(param_map[bq_str].pvals, param_map[bq_str].pshape);
-        Tensor<T> in_Bk(param_map[bk_str].pvals, param_map[bk_str].pshape);
-        Tensor<T> in_Bv(param_map[bv_str].pvals, param_map[bv_str].pshape);
+        Tensor<T>* in_Wq = new Tensor<T> { };
+        Tensor<T>* in_Wk = new Tensor<T> { };
+        Tensor<T>* in_Wv = new Tensor<T> { };
+        Tensor<T>* in_Bq = new Tensor<T> { };
+        Tensor<T>* in_Bk = new Tensor<T> { };
+        Tensor<T>* in_Bv = new Tensor<T> { };
+
+        if (sa_query_str != "attn.c_attn")
+        {
+            in_Wq = new Tensor<T>(param_map[wq_str].pvals, param_map[wq_str].pshape);
+            in_Wk = new Tensor<T>(param_map[wk_str].pvals, param_map[wk_str].pshape);
+            in_Wv = new Tensor<T>(param_map[wv_str].pvals, param_map[wv_str].pshape);
+            if (bias_str.empty( ) == false)
+            {
+                in_Bq = new Tensor<T>(param_map[bq_str].pvals, param_map[bq_str].pshape);
+                in_Bk = new Tensor<T>(param_map[bk_str].pvals, param_map[bk_str].pshape);
+                in_Bv = new Tensor<T>(param_map[bv_str].pvals, param_map[bv_str].pshape);
+            }
+        }
+        else
+        {
+            /* case for gpt2 */
+            string weight_gpt2_str = prefix_str+"."+sa_query_str+"."+weight_str;
+            string bias_gpt2_str = prefix_str+"."+sa_query_str+"."+bias_str;
+
+            Tensor<T> weight_merge(param_map[weight_gpt2_str].pvals, param_map[weight_gpt2_str].pshape);
+            Tensor<T> bias_merge(param_map[bias_gpt2_str].pvals, param_map[bias_gpt2_str].pshape);
+
+            split_weight_QKV(*in_Wq,*in_Wk,*in_Wv, weight_merge , dim_model);
+            split_bias_QKV(*in_Bq,*in_Bk,*in_Bv, bias_merge , dim_model);
+        }
+
         Tensor<T>* w_out = 
             new Tensor<T>(param_map[wout_str].pvals, param_map[wout_str].pshape);
-        Tensor<T>* b_out = 
-            new Tensor<T>(param_map[bout_str].pvals, param_map[bout_str].pshape);
+        
+        Tensor<T>* b_out = nullptr;
+        if (bias_str.empty( ))
+        {
+            b_out = new Tensor<T> { };
+        }
+        else
+        {
+            b_out = new Tensor<T>(param_map[bout_str].pvals, param_map[bout_str].pshape);
+        }
 
         /* Divide parametes into multiple heads */
         std::vector<Tensor<T> *>w_q;
@@ -101,9 +135,9 @@ public:
             {
                 for (int j=0; j<headDim; j++)
                 {
-                    (*tmp_Wq)[i*headDim+j] = in_Wq[i*dim_model+h*headDim+j];
-                    (*tmp_Wk)[i*headDim+j] = in_Wk[i*dim_model+h*headDim+j];
-                    (*tmp_Wv)[i*headDim+j] = in_Wv[i*dim_model+h*headDim+j];
+                    (*tmp_Wq)[i*headDim+j] = (*in_Wq)[i*dim_model+h*headDim+j];
+                    (*tmp_Wk)[i*headDim+j] = (*in_Wk)[i*dim_model+h*headDim+j];
+                    (*tmp_Wv)[i*headDim+j] = (*in_Wv)[i*dim_model+h*headDim+j];
                 }
             }
 
@@ -112,18 +146,29 @@ public:
             w_v.push_back(tmp_Wv);
 
             /* Bias division */
-            Tensor<T>* tmp_Bq = new Tensor<T>(vector<int>{headDim});
-            Tensor<T>* tmp_Bk = new Tensor<T>(vector<int>{headDim});
-            Tensor<T>* tmp_Bv = new Tensor<T>(vector<int>{headDim});
+            Tensor<T>* tmp_Bq = nullptr;
+            Tensor<T>* tmp_Bk = nullptr;
+            Tensor<T>* tmp_Bv = nullptr;
 
-            for (int i=0; i<headDim; i++)
+            if (bias_str.empty( ))
             {
-                (*tmp_Bq)[i] = in_Bq[h*headDim+i];
-                (*tmp_Bk)[i] = in_Bk[h*headDim+i];
-                (*tmp_Bv)[i] = in_Bv[h*headDim+i];
-
+                tmp_Bq = new Tensor<T> { };
+                tmp_Bk = new Tensor<T> { };
+                tmp_Bv = new Tensor<T> { };
             }
+            else
+            {
+                tmp_Bq = new Tensor<T>(vector<int>{headDim});
+                tmp_Bk = new Tensor<T>(vector<int>{headDim});
+                tmp_Bv = new Tensor<T>(vector<int>{headDim});
 
+                for (int i=0; i<headDim; i++)
+                {
+                    (*tmp_Bq)[i] = (*in_Bq)[h*headDim+i];
+                    (*tmp_Bk)[i] = (*in_Bk)[h*headDim+i];
+                    (*tmp_Bv)[i] = (*in_Bv)[h*headDim+i];
+                }
+            }
             b_q.push_back(tmp_Bq);
             b_k.push_back(tmp_Bk);
             b_v.push_back(tmp_Bv);
@@ -233,6 +278,39 @@ public:
     }
 
 private:
+    void split_weight_QKV(Tensor<T>& wmx_Q, Tensor<T>& wmx_K, Tensor<T>& wmx_V,
+        const Tensor<T>& input, const int dim_model)
+    {
+        wmx_Q.reshape(std::vector<int>{dim_model,dim_model});
+        wmx_K.reshape(std::vector<int>{dim_model,dim_model});
+        wmx_V.reshape(std::vector<int>{dim_model,dim_model});
+
+        for (int i=0; i<dim_model*3; i++)
+        {
+            for (int j=0; j<dim_model; j++)
+            {
+                wmx_Q[i*dim_model+j] = input[i*dim_model*3+j];
+                wmx_K[i*dim_model+j] = input[i*dim_model*3+dim_model*1+j];
+                wmx_V[i*dim_model+j] = input[i*dim_model*3+dim_model*2+j];
+            }
+        }
+    }
+
+    void split_bias_QKV(Tensor<T>& bmx_Q, Tensor<T>& bmx_K, Tensor<T>& bmx_V,
+        const Tensor<T>& input, const int dim_model)
+    {
+        bmx_Q.reshape(std::vector<int>{dim_model});
+        bmx_K.reshape(std::vector<int>{dim_model});
+        bmx_V.reshape(std::vector<int>{dim_model});
+        
+        for (int i=0; i<dim_model; i++)
+        {
+            bmx_Q[i] = input[i];
+            bmx_K[i] = input[dim_model*1+i];
+            bmx_V[i] = input[dim_model*2+i];
+        }
+    }
+
     void split_batch_layer(Tensor<T>& single_input, 
             const Tensor<T>& input, const int input_idx)
     {
@@ -394,6 +472,7 @@ private:
     int num_heads;
     int headDim;
     T scale;
+
 };
 }
 #endif //ATTENTION_TRANSFORMER_CPP_MULTIHEADATTENTION_H

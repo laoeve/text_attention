@@ -108,5 +108,6 @@
         "syncstream": "cpp",
         "filesystem": "cpp"
     },
-    "cmake.buildTask": false
+    "cmake.buildTask": false,
+    "C_Cpp.dimInactiveRegions": false
 }
