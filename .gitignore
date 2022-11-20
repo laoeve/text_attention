@@ -4,3 +4,4 @@ build/
 *.input
 *.dict
 *.swp
+*.tar.gz
