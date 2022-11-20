@@ -58,7 +58,7 @@ public:
     : voca_src_size(voca_src_size),voca_tgt_size(voca_tgt_size),model_arg(model_arg)
     {
         /* Template */
-        SENTENCE_LEN = 128;
+        SENTENCE_LEN = 32;
         TopModel<T>::num_layers = 6;
         TopModel<T>::dim_embed = 512;
         TopModel<T>::num_heads = 8;
