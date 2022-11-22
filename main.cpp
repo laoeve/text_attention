@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
 
     /* Run model */
     std::cout << "Run the constructed model" << std::endl;
-    model->forward(output, input);
+    model->top_forward(output, input);
 
     //delete model;
     cout << "done" << endl;

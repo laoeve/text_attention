@@ -153,7 +153,7 @@ public:
         pooler->print_params( );
     }
 
-    void forward(Tensor<T> &output, const Tensor<T> &input) override 
+    void top_forward(Tensor<T> &output, const Tensor<T> &input) override 
     {
         Tensor<T> input_iter(input, input.shape);
 
