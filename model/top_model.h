@@ -49,7 +49,7 @@ public:
     int num_heads;
     int dim_ff;
 
-    virtual void forward(Tensor<T>& output, const Tensor<T>& input) = 0;
+    virtual void top_forward(Tensor<T>& output, const Tensor<T>& input) = 0;
 
     /*
      * Dimension will be [BATCH SIZE x Q_LEN x K LEN] 

@@ -129,7 +129,7 @@ public:
         ln_final = new LayerNorm<T>(ln_f_str, dim_embed, *gamma, *beta);
     }
 
-    void forward(Tensor<T> &output, const Tensor<T> &input) override 
+    void top_forward(Tensor<T> &output, const Tensor<T> &input) override 
     {
         Tensor<T> dec_out_inter{};  // intermediate output tensor from encoder
         Tensor<T> dec_out_fin{};    // final output tensor from encoder LN
