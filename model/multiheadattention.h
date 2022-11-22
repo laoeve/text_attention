@@ -281,12 +281,12 @@ private:
     void split_weight_QKV(Tensor<T>& wmx_Q, Tensor<T>& wmx_K, Tensor<T>& wmx_V,
         const Tensor<T>& input, const int dim_model)
     {
-        std::chrono::time_point<clock_> start_t = clock_::now();
+        //std::chrono::time_point<clock_> start_t = clock_::now();
         wmx_Q.reshape(std::vector<int>{dim_model,dim_model});
         wmx_K.reshape(std::vector<int>{dim_model,dim_model});
         wmx_V.reshape(std::vector<int>{dim_model,dim_model});
 
-        for (int i=0; i<dim_model*3; i++)
+        for (int i=0; i<dim_model; i++)
         {
             for (int j=0; j<dim_model; j++)
             {
@@ -295,13 +295,13 @@ private:
                 wmx_V[i*dim_model+j] = input[i*dim_model*3+dim_model*2+j];
             }
         }
-        interval_map["split_weight_QKV"] += INTERVAL(start_t);
+        //interval_map["split_weight_QKV"] += INTERVAL(start_t);
     }
 
     void split_bias_QKV(Tensor<T>& bmx_Q, Tensor<T>& bmx_K, Tensor<T>& bmx_V,
         const Tensor<T>& input, const int dim_model)
     {
-        std::chrono::time_point<clock_> start_t = clock_::now();
+        //std::chrono::time_point<clock_> start_t = clock_::now();
         bmx_Q.reshape(std::vector<int>{dim_model});
         bmx_K.reshape(std::vector<int>{dim_model});
         bmx_V.reshape(std::vector<int>{dim_model});
@@ -312,7 +312,7 @@ private:
             bmx_K[i] = input[dim_model*1+i];
             bmx_V[i] = input[dim_model*2+i];
         }
-        interval_map["split_bias_QKV"] += INTERVAL(start_t);
+        //interval_map["split_bias_QKV"] += INTERVAL(start_t);
     }
 
     void split_batch_layer(Tensor<T>& single_input, 

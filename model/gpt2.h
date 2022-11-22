@@ -98,7 +98,7 @@ public:
         const string prefix_em_pos = "wpe";
         const string em_str = "weight";
         const string pe_str = "weight";
-        const string gen_str = "ln_f";
+        const string ln_f_str = "ln_f";
 
         /* Init embedding layers */
         lut_em_token = new Tensor<T>(
@@ -118,18 +118,15 @@ public:
                 sa_key_str, sa_value_str, sa_out_str,
                 ff_hidden_str, ff_out_str, LN_dec_mh_str, LN_dec_ff_str);
 
-        /* Init generator layer */
-        Tensor<T>* gen_w = new Tensor<T>(
-                param_map[gen_str+"."+weight_str].pvals,
-                param_map[gen_str+"."+weight_str].pshape);
-        Tensor<T>* gen_b = new Tensor<T>(
-                param_map[gen_str+"."+bias_str].pvals,
-                param_map[gen_str+"."+bias_str].pshape);
+        /* Init ln_final layer */
+        Tensor<T>* gamma = new Tensor<T>(
+                param_map[ln_f_str+"."+weight_str].pvals,
+                param_map[ln_f_str+"."+weight_str].pshape);
+        Tensor<T>* beta = new Tensor<T>(
+                param_map[ln_f_str+"."+bias_str].pvals,
+                param_map[ln_f_str+"."+bias_str].pshape);
 
-        generator = new Linear<T>(gen_str, dim_embed, 
-                voca_tgt_size, *gen_w, *gen_b);
-
-        generator->print_params( );
+        ln_final = new LayerNorm<T>(ln_f_str, dim_embed, *gamma, *beta);
     }
 
     void forward(Tensor<T> &output, const Tensor<T> &input) override 
@@ -154,29 +151,25 @@ public:
 
             decoder_gpt2->forward(dec_out_inter, input_embed, tgt_mask);
 
-            /* Generator and softmax */
-            Tensor<T> gen_out{ };
-            generator->forward(gen_out, dec_out_inter);
+            /* ln_final and softmax */
+            Tensor<T> ln_out{ };
+            ln_final->forward(ln_out, dec_out_inter);
         
             //Layer<T>* layer_tensor { };
             Tensor<T> logits{ };
             //gen_out.reshape(std::vector(gen_out.shape[1], gen_out.shape[2]));
-            (*lut_em_token).transpose( );
-            layer_tensor->matmul(logits, gen_out, *lut_em_token, 1.0);
+            layer_tensor->matmul(logits, ln_out, *lut_em_token, 1.0);
 
             /* Find max value of probability */
             Tensor<T> max_indices{ };
             max_tensor.forward(max_indices, logits);
-
-            /* Set indices across the batch */
-            set_new_tgt_input(input_iter, max_indices, i);
         }
     }
 
     uint64_t parameterCount() 
     {
         return decoder_gpt2->parameterCount() +
-               generator->parameterCount();
+               ln_final->parameterCount();
     }
 
 private:
@@ -207,7 +200,7 @@ private:
     Tensor<T>* lut_em_token = nullptr;
     Embedding<T>* embed_words = nullptr;
     Decoder_GPT2<T> *decoder_gpt2 = nullptr;
-    Linear<T> *generator = nullptr;
+    LayerNorm<T> *ln_final = nullptr;
     MaxTensor<T> max_tensor;
     Layer<T> *layer_tensor;
 };

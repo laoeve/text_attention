@@ -96,7 +96,8 @@ int main(int argc, char* argv[])
         string path_value = "../params/value_transformer.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
-        model = new AttentionTransformer<data_t>(param_map["src_embed.0.lut.weight"].pshape[0], param_map["tgt_embed.0.lut.weight"].pshape[0], model_arg);
+        model = new AttentionTransformer<data_t>(param_map["src_embed.0.lut.weight"].pshape[0],
+                param_map["tgt_embed.0.lut.weight"].pshape[0], model_arg);
     }
     else if (model_arg=="bert-base")
     {
@@ -106,7 +107,8 @@ int main(int argc, char* argv[])
         string path_value = "../params/value_bert_base.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
-        model = new BERT<data_t>(param_map["embeddings.word_embeddings.weight"].pshape[0], param_map["embeddings.word_embeddings.weight"].pshape[0], model_arg);
+        model = new BERT<data_t>(param_map["embeddings.word_embeddings.weight"].pshape[0],
+                param_map["embeddings.word_embeddings.weight"].pshape[0], model_arg);
     }
     else if (model_arg=="bert-large")
     {
@@ -116,7 +118,8 @@ int main(int argc, char* argv[])
         string path_value = "../params/value_bert_large.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
-        model = new BERT<data_t>(param_map["embeddings.word_embeddings.weight"].pshape[0], param_map["embeddings.word_embeddings.weight"].pshape[0], model_arg);
+        model = new BERT<data_t>(param_map["embeddings.word_embeddings.weight"].pshape[0],
+                param_map["embeddings.word_embeddings.weight"].pshape[0], model_arg);
     }
     else if (model_arg=="gpt2")
     {
@@ -126,7 +129,8 @@ int main(int argc, char* argv[])
         string path_value = "../params/value_gpt2.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
-        model = new GPT2<data_t>(param_map["wte.weight"].pshape[0], param_map["wte.weight"].pshape[0], model_arg);
+        model = new GPT2<data_t>(param_map["wte.weight"].pshape[0],
+                param_map["wte.weight"].pshape[0], model_arg);
     }
     else if (model_arg=="t5-base")
     {
@@ -136,7 +140,8 @@ int main(int argc, char* argv[])
         string path_value = "../params/value_t5_base.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
-        model = new T5<data_t>(param_map["encoder.embed_tokens.weight"].pshape[0], param_map["encoder.embed_tokens.weight"].pshape[0], model_arg);
+        model = new T5<data_t>(param_map["encoder.embed_tokens.weight"].pshape[0],
+                param_map["encoder.embed_tokens.weight"].pshape[0], model_arg);
     }
     else if (model_arg=="t5-small")
     {
@@ -146,7 +151,8 @@ int main(int argc, char* argv[])
         string path_value = "../params/value_t5_small.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
-        model = new T5<data_t>(param_map["encoder.embed_tokens.weight"].pshape[0], param_map["encoder.embed_tokens.weight"].pshape[0], model_arg);
+        model = new T5<data_t>(param_map["encoder.embed_tokens.weight"].pshape[0],
+                param_map["encoder.embed_tokens.weight"].pshape[0], model_arg);
     }
     else
     {
