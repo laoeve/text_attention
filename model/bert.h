@@ -148,7 +148,7 @@ public:
                 param_map[pooler_str+"."+bias_str].pshape);
 
         pooler = new Linear<T>(pooler_str, dim_embed, 
-                voca_tgt_size, *pool_w, *pool_b);
+                dim_embed, *pool_w, *pool_b);
 
         pooler->print_params( );
     }

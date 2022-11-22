@@ -13,6 +13,7 @@
 #include <vector>
 #include <regex>
 #include <string>
+#include <chrono>
 #include <map>
 #include <cassert>
 #include "tensor.h"
@@ -35,74 +36,31 @@ T GELU(T x)
     // approximate function provide by https://arxiv.org/pdf/1606.08415.pdf
 }
 
-std::string replace_str(const std::string input, std::string before, std::string after)
+typedef std::chrono::steady_clock clock_;
+//typedef std::chrono::duration_cast<double, std::micro > usec_;
+std::map<std::string, std::chrono::nanoseconds> interval_map;
+
+
+auto INTERVAL(auto timer) 
 {
-    std::string ret = input;
-    ret.replace(input.find(before), before.size( ), after);
-    return ret;
+    return clock_::now() - timer;
 }
 
-template<typename T>
-Tensor <T> *get_relative_distances(int windowSize) 
+void interval_init()
 {
-    auto *ret = new Tensor<T>();
-    std::vector<std::pair<T, T> > tmp;
-    for (int i = 0; i < windowSize; ++i) {
-        for (int j = 0; j < windowSize; ++j) {
-            tmp.emplace_back((T) i, (T) j);
-        }
-    }
-
-    for (int i1 = 0; i1 < windowSize; ++i1) {
-        for (int j1 = 0; j1 < windowSize; ++j1) {
-            for (int i2 = 0; i2 < windowSize; ++i2) {
-                for (int j2 = 0; j2 < windowSize; ++j2) {
-                    ret->push_back(tmp[i2 * windowSize + j2].first - tmp[i1 * windowSize + j1].first);
-                    ret->push_back(tmp[i2 * windowSize + j2].second - tmp[i1 * windowSize + j1].second);
-                }
-            }
-        }
-    }
-    ret->shape = (
-        windowSize * windowSize,
-        windowSize * windowSize,
-        2
-    );
-    return ret;
-}
-
-template<typename T>
-Tensor <T> *create_mask(int windowSize, int displacement, 
-        bool upperLower, bool leftRight) 
-{
-    int sizeV2 = windowSize * windowSize;
-    auto *ret = new Tensor<T>(sizeV2 * sizeV2, 0);
-    ret->shape = (sizeV2, sizeV2);
-    if (upperLower) {
-        for (int pos = 0; pos < sizeV2 * sizeV2; ++pos) {
-            int d1 = pos / sizeV2;
-            int d2 = pos % sizeV2;
-            if ((d1 >= sizeV2 - displacement * windowSize and 
-                 d2 < sizeV2 - displacement * windowSize) or
-                (d1 < sizeV2 - displacement * windowSize and 
-                 d2 >= sizeV2 - displacement * windowSize)) {
-                (*ret)[pos] = -INFINITY;
-            }
-        }
-    }
-    if (leftRight) {
-        for (int pos = 0; pos < sizeV2 * sizeV2; ++pos) {
-            int tmp = pos;
-            int d4 = tmp % windowSize;
-            tmp /= sizeV2;
-            int d2 = tmp % windowSize;
-            if ((d2 >= windowSize - displacement and d4 < windowSize - displacement) or
-                (d2 < windowSize - displacement and d4 >= windowSize - displacement)) {
-                (*ret)[pos] = -INFINITY;
-            }
-        }
-    }
-    return ret;
+    //interval_map.insert({"GELU", 0});
+    interval_map["interval_multiply_sum"] = std::chrono::nanoseconds(0);
+    interval_map["GELU"]= std::chrono::nanoseconds(0);
+    interval_map["LayerNorm Forward"]= std::chrono::nanoseconds(0);
+    interval_map["layer_matmul"]= std::chrono::nanoseconds(0);
+    interval_map["Max Tensor"]= std::chrono::nanoseconds(0);
+    interval_map["split_weight_QKV"]= std::chrono::nanoseconds(0);
+    interval_map["split_bias_QKV"]= std::chrono::nanoseconds(0);
+    interval_map["split_batch_layer"]= std::chrono::nanoseconds(0);
+    interval_map["SoftMax_forward"]= std::chrono::nanoseconds(0);
+    interval_map["Tensor Transpose"]= std::chrono::nanoseconds(0);
+    interval_map["attention_dist-wo_softmax"]= std::chrono::nanoseconds(0);
+    interval_map["attention-concat"]= std::chrono::nanoseconds(0);
 }
 
 std::map<int, std::string> vocab_parsing(std::string filename) 
@@ -303,8 +261,8 @@ void get_param_value(std::string fpath, std::map<std::string, pinfo_t> &target_m
         target_map[pname].pvals = vvec;
 
 
-        cout << "Finish getting parameters of : " 
-            << pname << " " << target_map[pname].pvals.size( ) << endl;
+        std::cout << "Finish getting parameters of : " 
+            << pname << " " << target_map[pname].pvals.size( ) << std::endl;
 /*
         for(int i =0 ; i < target_map[pname].pshape.size(); ++i){
             cout << "size verify" << target_map[pname].pshape[i]<<endl;

@@ -105,8 +105,10 @@ public:
         Tensor<T> h2out{};
         linear_h->forward(h2out, input);
 
+        std::chrono::time_point<clock_> start_t = clock_::now();
         for (int i=0; i<h2out.size( ); i++)
             h2out[i] = GELU(h2out[i]);
+        interval_map["GELU"] += INTERVAL(start_t);
 
         linear_o->forward(output, h2out);
     }

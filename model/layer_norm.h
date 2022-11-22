@@ -71,6 +71,7 @@ public:
 
     void forward(Tensor <T> &output, const Tensor <T> &input) override 
     {
+        std::chrono::time_point<clock_> start_t = clock_::now();
         if (is_operable(input)==false)
         {
             std::cerr << "Error: dimension error on " << name << std::endl;
@@ -122,6 +123,7 @@ public:
                 }
             }
         }
+        interval_map["LayerNorm Forward"] += INTERVAL(start_t);
     }
 
 private:
