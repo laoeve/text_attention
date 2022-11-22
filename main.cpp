@@ -22,10 +22,10 @@ int main(int argc, char* argv[])
     /* Model arguments */
     string path_shape_input;
     string path_value_input;
-    string model_arg = "transformer";
+    //string model_arg = "transformer";
     //string model_arg = "bert-base";
     //string model_arg = "bert-large";
-    //string model_arg = "gpt2";
+    string model_arg = "gpt2";
     //string model_arg = "t5-small";
     //string model_arg = "t5-base";
     bool model_interval = false;
