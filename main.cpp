@@ -23,10 +23,10 @@ int main(int argc, char* argv[])
     /* Model arguments */
     string path_shape_input;
     string path_value_input;
-    //string model_arg = "transformer";
+    string model_arg = "transformer";
     //string model_arg = "bert-base";
     //string model_arg = "bert-large";
-    string model_arg = "gpt2";
+    //string model_arg = "gpt2";
     //string model_arg = "t5-small";
     //string model_arg = "t5-base";
     bool model_interval = false;
@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
                 << "[transformer, bert-base, bert-large, gpt2]\n"
                 << "\t--input-shape-path: path of input shape\n"
                 << "\t--input-value-path: path of input shape\n"
-                << "\t-l: 0 [none] / 1 [print execution time]"
+                << "\t-e: 0 [none] / 1 [print execution time]"
                 << std::endl;
             exit(1);
         }
@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
         std::cout << "Running for Execution Time Accumulation with Release Mode" << std::endl;
     }
     interval_init();
-    auto start_t = clock_::now();
+    const std::chrono::time_point<clock_> start_t = clock_::now();
 
     /* Init models */
     TopModel<data_t>* model = nullptr;
@@ -162,8 +162,8 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    auto mid_t = clock_::now();
-    auto model_init_t = INTERVAL(start_t);
+    const std::chrono::time_point<clock_> mid_t = clock_::now();
+    const std::chrono::nanoseconds model_init_t = INTERVAL(start_t);
 
     std::cout << "Model initiailization completes!" << std::endl;
     param_map.clear( );
@@ -185,8 +185,8 @@ int main(int argc, char* argv[])
     //delete model;
     std::cout << "done" << std::endl;
 
-    auto total_t = INTERVAL(start_t);
-    auto model_fwd_t = INTERVAL(mid_t);
+    std::chrono::nanoseconds total_t = INTERVAL(start_t);
+    std::chrono::nanoseconds model_fwd_t = INTERVAL(mid_t);
 
     if(model_interval)
     {

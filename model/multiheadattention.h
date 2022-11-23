@@ -429,7 +429,6 @@ private:
             }
         }
         interval_map["attention_dist-wo_softmax"] += INTERVAL(start_t);
-
         /* Calculate distribution */
         softMax.forward(att_dist, att_score);
     }
