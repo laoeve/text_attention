@@ -2,6 +2,7 @@
 // Created by dianh on 2021/04/16.
 //
 #include "bits/stdc++.h"
+#include "annotations.h"
 #include <cassert>
 #include <chrono>
 #include "model/top_model.h"
@@ -177,7 +178,9 @@ int main(int argc, char* argv[])
 
     /* Run model */
     std::cout << "Run the constructed model" << std::endl;
+    SIM_BEGIN(true);
     model->top_forward(output, input);
+    SIM_END(true);
 
     //delete model;
     std::cout << "done" << std::endl;
