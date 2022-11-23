@@ -157,7 +157,6 @@ public:
         
             //Layer<T>* layer_tensor { };
             Tensor<T> logits{ };
-            //gen_out.reshape(std::vector(gen_out.shape[1], gen_out.shape[2]));
             layer_tensor->matmul(logits, ln_out, *lut_em_token, 1.0);
 
             /* Find max value of probability */

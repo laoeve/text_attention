@@ -125,8 +125,8 @@ int main(int argc, char* argv[])
     {
         path_shape_input = "../sentence/shape_GPT2.input";
         path_value_input = "../sentence/value_GPT2.input";
-        string path_shape = "../params/shape_gpt2.param";
-        string path_value = "../params/value_gpt2.param";
+        string path_shape = "../params/shape_GPT2.param";
+        string path_value = "../params/value_GPT2.param";
         get_param_shape(path_shape, param_map);
         get_param_value(path_value, param_map);
         model = new GPT2<data_t>(param_map["wte.weight"].pshape[0],
