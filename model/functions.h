@@ -41,9 +41,11 @@ typedef std::chrono::steady_clock clock_;
 std::map<std::string, std::chrono::nanoseconds> interval_map;
 
 
-auto INTERVAL(auto timer) 
+std::chrono::nanoseconds INTERVAL(const std::chrono::time_point<clock_> timer) 
 {
-    return clock_::now() - timer;
+    const std::chrono::time_point<clock_> present_t = clock_::now();
+    std::chrono::nanoseconds return_t = present_t - timer;
+    return return_t;
 }
 
 void interval_init()
